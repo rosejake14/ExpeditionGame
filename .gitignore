@@ -1,0 +1,17 @@
+# Unreal Engine generated folders
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Visual Studio
+.vs/
+*.sln.DotSettings.user
+
+# Rider
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store

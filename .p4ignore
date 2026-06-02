@@ -1,0 +1,86 @@
+# ===============================
+# Unreal Engine .p4ignore
+# ===============================
+
+# Ignore user-specific and IDE files
+.idea/
+.vs/
+.vscode/
+*.suo
+*.user
+*.userprefs
+*.opensdf
+*.sdf
+*.sln.docstates
+
+# Ignore Unreal build and cache folders
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Ignore Unreal-generated project files
+*.xcodeproj
+*.xcworkspace
+*.VC.db
+*.VC.opendb
+
+# Ignore log, backup, and temporary files
+*.log
+*.tlog
+*.obj
+*.pch
+*.pdb
+*.tmp
+*.bak
+
+# Ignore configuration backups or local overrides
+*.local
+*.ini.save
+*.old
+
+# Ignore build folders inside all plugins
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+Plugins/*/Saved/
+
+# Ignore temporary packaging folders
+*.ipa
+*.apk
+*.app
+*.dSYM
+
+# Ignore Unreal Automation/Profiling output
+AutomationReport/
+Profiling/
+
+# Ignore crash reports and autosaves
+Saved/Autosaves/
+Saved/Logs/
+Saved/Backups/
+Saved/Crashes/
+
+# Ignore Generated Code (e.g. Blueprint nativization)
+Source/Generated*/ 
+
+# Ignore Perforce metadata files (avoid recursive adds)
+p4config.txt
+p4ignore.txt
+.p4config
+.p4ignore
+
+# Ignore editor cache and derived data
+Engine/DerivedDataCache/
+Engine/Saved/
+Engine/Intermediate/
+
+# Ignore temporary build folders created by Unreal
+# (sometimes UE builds these inside Plugins)
+Plugins/*/Intermediate/
+Plugins/*/Binaries/
+Plugins/*/Saved/
+
+# ===============================
+# End of .p4ignore
+# ===============================

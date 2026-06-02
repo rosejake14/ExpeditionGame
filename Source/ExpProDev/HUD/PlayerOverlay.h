@@ -1,0 +1,24 @@
+// No Rights Reserved @ Team Expedition 
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "PlayerOverlay.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class EXPPRODEV_API UPlayerOverlay : public UUserWidget
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(meta = (BindWidget))
+	class UProgressBar* HealthBar;
+
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* HealthText;
+private:
+	
+};
