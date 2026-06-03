@@ -16,11 +16,16 @@ class EXPPRODEV_API ADefaultPlayerController : public APlayerController
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetHUDHealth(float Health, float MaxHealth);
-	
+
+	void SetHUDKillCount(int32 KillCount);
+	void AddKill();
+
 	virtual void OnPossess(APawn* InPawn) override;
 protected:
 	virtual void BeginPlay() override;
 private:
 	UPROPERTY()
 	class APlayerHUD* PlayerHUD;
+
+	int32 KillCount = 0;
 };

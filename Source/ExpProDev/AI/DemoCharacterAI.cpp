@@ -8,6 +8,7 @@
 #include "Gamemode/DefaultGameMode.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "PlayerController/DefaultPlayerController.h"
 
 // Sets default values
 ADemoCharacterAI::ADemoCharacterAI()
@@ -58,6 +59,11 @@ void ADemoCharacterAI::ReceiveDamage(AActor* DamagedActor, float Damage, const U
 	
 	if (Health <= 0.f)
 	{
+		ADefaultPlayerController* PC = Cast<ADefaultPlayerController>(InstigatedController);
+		if (PC)
+		{
+			PC->AddKill();
+		}
 		Destroy();
 	}
 	

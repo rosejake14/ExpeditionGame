@@ -19,6 +19,9 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* HealthText;
+
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* KillCountText;
 private:
-	
+
 };

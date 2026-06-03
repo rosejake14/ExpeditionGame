@@ -63,6 +63,32 @@ void ADefaultPlayerController::SetHUDHealth(float Health, float MaxHealth)
 	
 }
 
+//
+// Updating HUD for the Kill Count.
+//
+void ADefaultPlayerController::SetHUDKillCount(int32 Count)
+{
+	PlayerHUD = PlayerHUD == nullptr ? Cast<APlayerHUD>(GetHUD()) : PlayerHUD;
+
+	bool bHUDValid = PlayerHUD &&
+		PlayerHUD->PlayerOverlay &&
+			PlayerHUD->PlayerOverlay->KillCountText;
+
+	if (bHUDValid)
+	{
+		FString KillText = FString::Printf(TEXT("Kills: %d"), Count);
+		PlayerHUD->PlayerOverlay->KillCountText->SetText(FText::FromString(KillText));
+	}
+}
+
+void ADefaultPlayerController::AddKill()
+{
+	SetHUDKillCount(++KillCount);
+}
+//
+// 
+//
+
 void ADefaultPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
