@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Inventory/LootTable.h"
 #include "DemoCharacterAI.generated.h"
 
 UCLASS()
@@ -43,4 +44,7 @@ public:
 	float MaxHealth = 100.f;
 	UPROPERTY(Replicated, VisibleAnywhere, Category = PlayerStats)
 	float Health;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Loot")
+	FLootTable LootTable;
 };

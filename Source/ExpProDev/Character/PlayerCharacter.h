@@ -53,6 +53,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* AimWeaponAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* InteractAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* ScrollHotbarAction;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -71,6 +77,8 @@ protected:
 	void FireWeaponButtonReleased(const FInputActionInstance& Instance);
 	void AimWeaponButtonPressed(const FInputActionInstance& Instance);
 	void AimWeaponButtonReleased(const FInputActionInstance& Instance);
+	void InteractButtonPressed(const FInputActionInstance& Instance);
+	void ScrollHotbar(const FInputActionInstance& Instance);
 	void AimOffset(float DeltaTime);
 	UFUNCTION() // Callback events ALWAYS need to be UFUNCTIONS
 	void RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatedController, class AActor* DamageCauser);
@@ -119,6 +127,12 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UCombatComponent* Combat;
 
+	UPROPERTY(VisibleAnywhere)
+	class UInventoryComponent* Inventory;
+
+	UPROPERTY()
+	class AItemPickup* PendingPickup;
+
 	UFUNCTION(Server, Reliable) // Reliable - garuntee to be executed. Unreliable - potential to be dropped.
 	void ServerEquipButtonPressed();
 
@@ -139,6 +153,11 @@ public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
 	bool IsWeaponEquipped();
 	bool IsAiming();
+
+	void SetPendingPickup(class AItemPickup* Pickup);
+	void ClearPendingPickupIfMatch(class AItemPickup* Pickup);
+
+	FORCEINLINE class UInventoryComponent* GetInventory() const { return Inventory; }
 
 	// For calling ONLY ON THE SERVER
 	void Eliminated();

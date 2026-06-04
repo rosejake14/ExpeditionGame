@@ -6,6 +6,8 @@
 #include "GameFramework/HUD.h"
 #include "PlayerHUD.generated.h"
 
+class UInventoryComponent;
+
 USTRUCT(BlueprintType)
 struct FHUDPackage
 {
@@ -36,14 +38,23 @@ public:
 	UPROPERTY()
 	class UPlayerOverlay* PlayerOverlay;
 
+	UPROPERTY(EditAnywhere, Category = PlayerStats)
+	TSubclassOf<class UHotbarWidget> HotbarWidgetClass;
+	UPROPERTY()
+	class UHotbarWidget* HotbarWidget;
+
 protected:
 	virtual void BeginPlay() override;
 	void AddPlayerOverlay();
+	void AddHotbarWidget();
 private:
 	FHUDPackage HUDPackage;
 
 	void DrawCrosshair(UTexture2D* TextureToDraw, FVector2D ViewportCentre);
 
 public:
+	// Called from DefaultPlayerController::OnPossess — safe to call before or after HUD BeginPlay
+	void InitHotbarForInventory(class UInventoryComponent* Inventory);
+
 	FORCEINLINE void SetHUDPackage(const FHUDPackage& Package) { HUDPackage = Package; }
 };

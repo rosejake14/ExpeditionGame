@@ -6,6 +6,7 @@
 #include "Components/TextBlock.h"
 #include "HUD/PlayerOverlay.h"
 #include "HUD/PlayerHUD.h"
+#include "HUD/HotbarWidget.h"
 #include "Character/PlayerCharacter.h"
 
 void ADefaultPlayerController::BeginPlay()
@@ -97,5 +98,11 @@ void ADefaultPlayerController::OnPossess(APawn* InPawn)
 	if (PlayerCharacter)
 	{
 		SetHUDHealth(PlayerCharacter->GetHealth(), PlayerCharacter->GetMaxHealth());
+
+		PlayerHUD = PlayerHUD == nullptr ? Cast<APlayerHUD>(GetHUD()) : PlayerHUD;
+		if (PlayerHUD)
+		{
+			PlayerHUD->InitHotbarForInventory(PlayerCharacter->GetInventory());
+		}
 	}
 }

@@ -9,6 +9,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "PlayerController/DefaultPlayerController.h"
+#include "Inventory/ItemPickup.h"
 
 // Sets default values
 ADemoCharacterAI::ADemoCharacterAI()
@@ -64,6 +65,27 @@ void ADemoCharacterAI::ReceiveDamage(AActor* DamagedActor, float Damage, const U
 		{
 			PC->AddKill();
 		}
+
+		// Spawn loot at the AI's death location
+		FVector SpawnLocation = GetActorLocation();
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		for (const FLootEntry& Entry : LootTable.Entries)
+		{
+			if (!Entry.Item || !Entry.PickupActorClass) continue;
+			if (FMath::FRand() <= Entry.DropChance)
+			{
+				int32 Qty = FMath::RandRange(Entry.MinQuantity, Entry.MaxQuantity);
+				AItemPickup* Pickup = GetWorld()->SpawnActor<AItemPickup>(Entry.PickupActorClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+				if (Pickup)
+				{
+					Pickup->ItemDef = Entry.Item;
+					Pickup->Quantity = Qty;
+					SpawnLocation += FVector(50.f, 0.f, 0.f);
+				}
+			}
+		}
+
 		Destroy();
 	}
 	

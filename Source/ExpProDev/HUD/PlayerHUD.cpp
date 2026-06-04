@@ -6,17 +6,14 @@
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "PlayerOverlay.h"
+#include "HotbarWidget.h"
+#include "Character/PlayerCharacter.h"
 
 void APlayerHUD::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	APlayerController* PlayerController = GetOwningPlayerController();
-	if(PlayerController && PlayerOverlayClass)
-	{
-		PlayerOverlay = CreateWidget<UPlayerOverlay>(PlayerController, PlayerOverlayClass);
-	} 
 	AddPlayerOverlay();
+	AddHotbarWidget();
 }
 
 void APlayerHUD::AddPlayerOverlay()
@@ -38,6 +35,33 @@ void APlayerHUD::AddPlayerOverlay()
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("PlayerHUD.cpp: PlayerOverlayClass or Controller missing"));
+	}
+}
+
+void APlayerHUD::AddHotbarWidget()
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC || !HotbarWidgetClass) return;
+
+	HotbarWidget = CreateWidget<UHotbarWidget>(PC, HotbarWidgetClass);
+	if (!HotbarWidget) return;
+
+	HotbarWidget->AddToViewport();
+
+	// Scenario B: OnPossess already fired before HUD BeginPlay — pawn is available now
+	APlayerCharacter* PlayerChar = Cast<APlayerCharacter>(PC->GetPawn());
+	if (PlayerChar)
+	{
+		HotbarWidget->InitHotbar(PlayerChar->GetInventory());
+	}
+}
+
+void APlayerHUD::InitHotbarForInventory(UInventoryComponent* Inventory)
+{
+	// Scenario A: HUD BeginPlay fired first — widget is ready, OnPossess is calling us now
+	if (HotbarWidget)
+	{
+		HotbarWidget->InitHotbar(Inventory);
 	}
 }
 

@@ -18,6 +18,8 @@
 #include "Weapon/Weapon.h"
 #include "Gamemode/DefaultGameMode.h"
 #include "TimerManager.h"
+#include "Inventory/InventoryComponent.h"
+#include "Inventory/ItemPickup.h"
 
 
 // Sets default values
@@ -45,6 +47,8 @@ APlayerCharacter::APlayerCharacter()
 
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combat->SetIsReplicated(true);
+
+	Inventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
@@ -156,6 +160,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		
 		Input->BindAction(AimWeaponAction, ETriggerEvent::Started, this, &APlayerCharacter::AimWeaponButtonPressed);
 		Input->BindAction(AimWeaponAction, ETriggerEvent::Completed, this, &APlayerCharacter::AimWeaponButtonReleased);
+
+		if (InteractAction)
+			Input->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerCharacter::InteractButtonPressed);
+		if (ScrollHotbarAction)
+			Input->BindAction(ScrollHotbarAction, ETriggerEvent::Triggered, this, &APlayerCharacter::ScrollHotbar);
 	}
 }
 
@@ -398,6 +407,39 @@ void APlayerCharacter::MulticastEliminated_Implementation()
 	// Disable collision
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void APlayerCharacter::InteractButtonPressed(const FInputActionInstance& Instance)
+{
+	if (!PendingPickup || !Inventory) return;
+
+	if (Inventory->AddItem(PendingPickup->ItemDef, PendingPickup->Quantity))
+	{
+		AItemPickup* PickupToDestroy = PendingPickup;
+		PendingPickup = nullptr;
+		PickupToDestroy->Destroy();
+	}
+}
+
+void APlayerCharacter::ScrollHotbar(const FInputActionInstance& Instance)
+{
+	if (!Inventory) return;
+	float ScrollValue = Instance.GetValue().Get<float>();
+	int32 HotbarCount = Inventory->GetHotbarSlotCount();
+	int32 Delta = ScrollValue > 0.f ? -1 : 1;
+	int32 NewIndex = ((Inventory->ActiveHotbarIndex + Delta) % HotbarCount + HotbarCount) % HotbarCount;
+	Inventory->SetActiveHotbarIndex(NewIndex);
+}
+
+void APlayerCharacter::SetPendingPickup(AItemPickup* Pickup)
+{
+	PendingPickup = Pickup;
+}
+
+void APlayerCharacter::ClearPendingPickupIfMatch(AItemPickup* Pickup)
+{
+	if (PendingPickup == Pickup)
+		PendingPickup = nullptr;
 }
 
 // Will only be called on the server.
