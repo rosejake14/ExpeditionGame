@@ -103,6 +103,7 @@ void ADefaultPlayerController::OnPossess(APawn* InPawn)
 		if (PlayerHUD)
 		{
 			PlayerHUD->InitHotbarForInventory(PlayerCharacter->GetInventory());
+				PlayerHUD->InitInventoryScreenForInventory(PlayerCharacter->GetInventory());
 		}
 	}
 }

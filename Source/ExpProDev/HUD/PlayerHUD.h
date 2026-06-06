@@ -7,6 +7,7 @@
 #include "PlayerHUD.generated.h"
 
 class UInventoryComponent;
+class UInventoryScreenWidget;
 
 USTRUCT(BlueprintType)
 struct FHUDPackage
@@ -43,10 +44,16 @@ public:
 	UPROPERTY()
 	class UHotbarWidget* HotbarWidget;
 
+	UPROPERTY(EditAnywhere, Category = PlayerStats)
+	TSubclassOf<UInventoryScreenWidget> InventoryScreenWidgetClass;
+	UPROPERTY()
+	UInventoryScreenWidget* InventoryScreenWidget;
+
 protected:
 	virtual void BeginPlay() override;
 	void AddPlayerOverlay();
 	void AddHotbarWidget();
+	void AddInventoryScreen();
 private:
 	FHUDPackage HUDPackage;
 
@@ -55,6 +62,10 @@ private:
 public:
 	// Called from DefaultPlayerController::OnPossess — safe to call before or after HUD BeginPlay
 	void InitHotbarForInventory(class UInventoryComponent* Inventory);
+	void InitInventoryScreenForInventory(class UInventoryComponent* Inventory);
+
+	// Called from PlayerCharacter input — toggles the full inventory screen and cursor
+	void ToggleInventoryScreen();
 
 	FORCEINLINE void SetHUDPackage(const FHUDPackage& Package) { HUDPackage = Package; }
 };

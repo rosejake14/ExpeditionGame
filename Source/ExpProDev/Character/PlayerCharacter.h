@@ -59,6 +59,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* ScrollHotbarAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* ToggleInventoryAction;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -79,6 +82,7 @@ protected:
 	void AimWeaponButtonReleased(const FInputActionInstance& Instance);
 	void InteractButtonPressed(const FInputActionInstance& Instance);
 	void ScrollHotbar(const FInputActionInstance& Instance);
+	void ToggleInventoryButtonPressed(const FInputActionInstance& Instance);
 	void AimOffset(float DeltaTime);
 	UFUNCTION() // Callback events ALWAYS need to be UFUNCTIONS
 	void RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatedController, class AActor* DamageCauser);

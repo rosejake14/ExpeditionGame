@@ -7,6 +7,7 @@
 #include "GameFramework/PlayerController.h"
 #include "PlayerOverlay.h"
 #include "HotbarWidget.h"
+#include "InventoryScreenWidget.h"
 #include "Character/PlayerCharacter.h"
 
 void APlayerHUD::BeginPlay()
@@ -14,6 +15,7 @@ void APlayerHUD::BeginPlay()
 	Super::BeginPlay();
 	AddPlayerOverlay();
 	AddHotbarWidget();
+	AddInventoryScreen();
 }
 
 void APlayerHUD::AddPlayerOverlay()
@@ -58,10 +60,62 @@ void APlayerHUD::AddHotbarWidget()
 
 void APlayerHUD::InitHotbarForInventory(UInventoryComponent* Inventory)
 {
-	// Scenario A: HUD BeginPlay fired first — widget is ready, OnPossess is calling us now
 	if (HotbarWidget)
 	{
 		HotbarWidget->InitHotbar(Inventory);
+	}
+}
+
+void APlayerHUD::AddInventoryScreen()
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC) return;
+
+	// Fall back to the C++ class if no Blueprint is assigned — no WBP_InventoryScreen required
+	TSubclassOf<UInventoryScreenWidget> ClassToUse = InventoryScreenWidgetClass
+		? InventoryScreenWidgetClass
+		: TSubclassOf<UInventoryScreenWidget>(UInventoryScreenWidget::StaticClass());
+
+	InventoryScreenWidget = CreateWidget<UInventoryScreenWidget>(PC, ClassToUse);
+	if (!InventoryScreenWidget) return;
+
+	InventoryScreenWidget->AddToViewport(1); // zorder 1 so it renders above hotbar
+
+	APlayerCharacter* PlayerChar = Cast<APlayerCharacter>(PC->GetPawn());
+	if (PlayerChar)
+	{
+		InventoryScreenWidget->InitInventory(PlayerChar->GetInventory());
+	}
+}
+
+void APlayerHUD::InitInventoryScreenForInventory(UInventoryComponent* Inventory)
+{
+	if (InventoryScreenWidget)
+	{
+		InventoryScreenWidget->InitInventory(Inventory);
+	}
+}
+
+void APlayerHUD::ToggleInventoryScreen()
+{
+	if (!InventoryScreenWidget) return;
+
+	InventoryScreenWidget->ToggleScreen();
+
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC) return;
+
+	const bool bIsOpen = InventoryScreenWidget->GetVisibility() == ESlateVisibility::Visible;
+	PC->SetShowMouseCursor(bIsOpen);
+	if (bIsOpen)
+	{
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+	}
+	else
+	{
+		PC->SetInputMode(FInputModeGameOnly());
 	}
 }
 

@@ -6,12 +6,13 @@
 UInventoryComponent::UInventoryComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	Slots.SetNum(HotbarSlotCount + OverflowSlotCount);
 }
 
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	Slots.SetNum(HotbarSlotCount * 3);
+	Slots.SetNum(HotbarSlotCount + OverflowSlotCount);
 }
 
 bool UInventoryComponent::AddItem(UItemDefinition* ItemDef, int32 Quantity, AWeapon* WeaponInstance)

@@ -34,16 +34,20 @@ public:
 	UInventoryComponent();
 	virtual void BeginPlay() override;
 
-	// Number of hotbar slots (X). Total inventory = X * 3.
+	// Number of hotbar slots — also determines the column count in the full inventory grid.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
 	int32 HotbarSlotCount = 4;
+
+	// Number of overflow slots (rows beyond the hotbar row). Total inventory = HotbarSlotCount + OverflowSlotCount.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
+	int32 OverflowSlotCount = 8;
 
 	bool AddItem(class UItemDefinition* ItemDef, int32 Quantity = 1, class AWeapon* WeaponInstance = nullptr);
 	bool RemoveItem(int32 SlotIndex, int32 Quantity = 1);
 	void SwapSlots(int32 IndexA, int32 IndexB);
 
 	const FInventorySlot& GetSlot(int32 Index) const;
-	int32 GetTotalSlotCount() const { return Slots.Num(); }
+	int32 GetTotalSlotCount() const { return HotbarSlotCount + OverflowSlotCount; }
 	int32 GetHotbarSlotCount() const { return HotbarSlotCount; }
 
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")

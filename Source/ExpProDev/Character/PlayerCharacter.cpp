@@ -20,6 +20,7 @@
 #include "TimerManager.h"
 #include "Inventory/InventoryComponent.h"
 #include "Inventory/ItemPickup.h"
+#include "HUD/PlayerHUD.h"
 
 
 // Sets default values
@@ -165,6 +166,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			Input->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerCharacter::InteractButtonPressed);
 		if (ScrollHotbarAction)
 			Input->BindAction(ScrollHotbarAction, ETriggerEvent::Triggered, this, &APlayerCharacter::ScrollHotbar);
+		if (ToggleInventoryAction)
+			Input->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &APlayerCharacter::ToggleInventoryButtonPressed);
 	}
 }
 
@@ -419,6 +422,12 @@ void APlayerCharacter::InteractButtonPressed(const FInputActionInstance& Instanc
 		PendingPickup = nullptr;
 		PickupToDestroy->Destroy();
 	}
+}
+
+void APlayerCharacter::ToggleInventoryButtonPressed(const FInputActionInstance& Instance)
+{
+	APlayerHUD* HUD = PlayerController ? Cast<APlayerHUD>(PlayerController->GetHUD()) : nullptr;
+	if (HUD) HUD->ToggleInventoryScreen();
 }
 
 void APlayerCharacter::ScrollHotbar(const FInputActionInstance& Instance)
