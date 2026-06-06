@@ -7,6 +7,7 @@
 // UDataAsset is used instead of UPrimaryDataAsset for reliable editor asset creation flow
 #include "ItemDefinition.generated.h"
 
+// Item Type
 UENUM(BlueprintType)
 enum class EItemType : uint8
 {
