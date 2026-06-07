@@ -10,6 +10,7 @@
 #include "Net/UnrealNetwork.h"
 #include "PlayerController/DefaultPlayerController.h"
 #include "Inventory/ItemPickup.h"
+#include "Character/PlayerCharacter.h"
 
 // Sets default values
 ADemoCharacterAI::ADemoCharacterAI()
@@ -64,6 +65,12 @@ void ADemoCharacterAI::ReceiveDamage(AActor* DamagedActor, float Damage, const U
 		if (PC)
 		{
 			PC->AddKill();
+
+			APlayerCharacter* KillerCharacter = Cast<APlayerCharacter>(PC->GetPawn());
+			if (KillerCharacter)
+			{
+				KillerCharacter->AddXP(XPReward);
+			}
 		}
 
 		// Spawn loot at the AI's death location

@@ -20,6 +20,8 @@ public:
 	void SetHUDKillCount(int32 KillCount);
 	void AddKill();
 
+	void SetHUDXP(float XP, float XPToNextLevel, int32 Level);
+
 	virtual void OnPossess(APawn* InPawn) override;
 protected:
 	virtual void BeginPlay() override;

@@ -98,6 +98,15 @@ protected:
 	UFUNCTION()
 	void OnRep_Health();
 
+	// Player XP / Level:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = PlayerStats)
+	int32 Level = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerStats)
+	float XP = 0.f;
+	UPROPERTY(EditAnywhere, Category = PlayerStats)
+	float XPToNextLevel = 100.f;
+	void UpdateHUDXP();
+
 	// Player Eliminated:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerStats)
 	bool bEliminated = false;
@@ -173,4 +182,12 @@ public:
 	FORCEINLINE float GetHealth() const { return Health; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	FORCEINLINE bool IsElimmed() const { return bEliminated; }
+
+	// Adds XP towards the current level, rolling over and levelling up as needed.
+	// Public so quests / pickups / kill rewards can grant XP without depending on each other.
+	void AddXP(float Amount);
+
+	FORCEINLINE int32 GetLevel() const { return Level; }
+	FORCEINLINE float GetXP() const { return XP; }
+	FORCEINLINE float GetXPToNextLevel() const { return XPToNextLevel; }
 };

@@ -47,4 +47,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Loot")
 	FLootTable LootTable;
+
+	// XP awarded to whoever lands the killing blow.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Loot")
+	float XPReward = 25.f;
 };

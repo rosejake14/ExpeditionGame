@@ -347,6 +347,34 @@ void APlayerCharacter::UpdateHUDHealth()
 	}
 }
 
+void APlayerCharacter::AddXP(float Amount)
+{
+	if (Amount <= 0.f) return;
+
+	XP += Amount;
+
+	while (XP >= XPToNextLevel)
+	{
+		XP -= XPToNextLevel;
+		Level++;
+	}
+
+	UpdateHUDXP();
+}
+
+void APlayerCharacter::UpdateHUDXP()
+{
+	PlayerController = PlayerController == nullptr ? Cast<ADefaultPlayerController>(Controller) : PlayerController;
+	if (PlayerController)
+	{
+		PlayerController->SetHUDXP(XP, XPToNextLevel, Level);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to cast to Player Controller when updating HUD XP"));
+	}
+}
+
 void APlayerCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
 	if (OverlappingWeapon)

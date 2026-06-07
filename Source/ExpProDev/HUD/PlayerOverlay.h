@@ -22,6 +22,12 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* KillCountText;
+
+	UPROPERTY(meta = (BindWidget))
+	class UProgressBar* XPBar;
+
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* LevelText;
 private:
 
 };

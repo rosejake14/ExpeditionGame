@@ -86,6 +86,28 @@ void ADefaultPlayerController::AddKill()
 {
 	SetHUDKillCount(++KillCount);
 }
+
+//
+// Updating HUD for the XP Bar / Level.
+//
+void ADefaultPlayerController::SetHUDXP(float XP, float XPToNextLevel, int32 Level)
+{
+	PlayerHUD = PlayerHUD == nullptr ? Cast<APlayerHUD>(GetHUD()) : PlayerHUD;
+
+	bool bHUDValid = PlayerHUD &&
+		PlayerHUD->PlayerOverlay &&
+			PlayerHUD->PlayerOverlay->XPBar &&
+				PlayerHUD->PlayerOverlay->LevelText;
+
+	if (bHUDValid)
+	{
+		const float XPPercent = XPToNextLevel > 0.f ? XP / XPToNextLevel : 0.f;
+		PlayerHUD->PlayerOverlay->XPBar->SetPercent(XPPercent);
+
+		FString LevelString = FString::Printf(TEXT("Level: %d"), Level);
+		PlayerHUD->PlayerOverlay->LevelText->SetText(FText::FromString(LevelString));
+	}
+}
 //
 // 
 //
@@ -98,6 +120,7 @@ void ADefaultPlayerController::OnPossess(APawn* InPawn)
 	if (PlayerCharacter)
 	{
 		SetHUDHealth(PlayerCharacter->GetHealth(), PlayerCharacter->GetMaxHealth());
+		SetHUDXP(PlayerCharacter->GetXP(), PlayerCharacter->GetXPToNextLevel(), PlayerCharacter->GetLevel());
 
 		PlayerHUD = PlayerHUD == nullptr ? Cast<APlayerHUD>(GetHUD()) : PlayerHUD;
 		if (PlayerHUD)
