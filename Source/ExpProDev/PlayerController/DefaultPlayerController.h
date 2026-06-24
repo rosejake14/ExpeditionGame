@@ -21,6 +21,7 @@ public:
 	void AddKill();
 
 	void SetHUDXP(float XP, float XPToNextLevel, int32 Level);
+	void SetHUDQuestText(const FString& Text);
 
 	virtual void OnPossess(APawn* InPawn) override;
 protected:

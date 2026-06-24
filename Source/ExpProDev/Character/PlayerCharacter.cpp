@@ -21,6 +21,7 @@
 #include "Inventory/InventoryComponent.h"
 #include "Inventory/ItemPickup.h"
 #include "HUD/PlayerHUD.h"
+#include "Quest/QuestComponent.h"
 
 
 // Sets default values
@@ -50,6 +51,7 @@ APlayerCharacter::APlayerCharacter()
 	Combat->SetIsReplicated(true);
 
 	Inventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
+	QuestComponent = CreateDefaultSubobject<UQuestComponent>(TEXT("QuestComponent"));
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);

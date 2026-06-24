@@ -8,6 +8,7 @@
 
 class UInventoryComponent;
 class UInventoryScreenWidget;
+class UQuestWidget;
 
 USTRUCT(BlueprintType)
 struct FHUDPackage
@@ -49,11 +50,17 @@ public:
 	UPROPERTY()
 	UInventoryScreenWidget* InventoryScreenWidget;
 
+	UPROPERTY(EditAnywhere, Category = "Quest")
+	TSubclassOf<UQuestWidget> QuestWidgetClass;
+	UPROPERTY()
+	UQuestWidget* QuestWidget;
+
 protected:
 	virtual void BeginPlay() override;
 	void AddPlayerOverlay();
 	void AddHotbarWidget();
 	void AddInventoryScreen();
+	void AddQuestWidget();
 private:
 	FHUDPackage HUDPackage;
 

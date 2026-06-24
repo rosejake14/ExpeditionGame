@@ -19,8 +19,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup", meta = (ClampMin = 1))
 	int32 Quantity = 1;
 
+	UPROPERTY(EditAnywhere, Category = "Pickup|Animation")
+	float FloatAmplitude = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Pickup|Animation")
+	float FloatSpeed = 2.f;
+
+	UPROPERTY(EditAnywhere, Category = "Pickup|Animation")
+	float RotationSpeed = 90.f;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -36,4 +46,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	class UStaticMeshComponent* Mesh;
+
+	float BaseZ = 0.f;
+	float PhaseOffset = 0.f;
 };

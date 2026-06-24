@@ -8,7 +8,7 @@
 
 AItemPickup::AItemPickup()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollision"));
 	SphereCollision->SetSphereRadius(100.f);
@@ -22,8 +22,22 @@ AItemPickup::AItemPickup()
 void AItemPickup::BeginPlay()
 {
 	Super::BeginPlay();
+	BaseZ = GetActorLocation().Z;
+	PhaseOffset = FMath::RandRange(0.f, 2.f * PI);
+	SetActorRotation(FRotator(0.f, FMath::RandRange(0.f, 360.f), 0.f));
 	SphereCollision->OnComponentBeginOverlap.AddDynamic(this, &AItemPickup::OnSphereOverlap);
 	SphereCollision->OnComponentEndOverlap.AddDynamic(this, &AItemPickup::OnSphereEndOverlap);
+}
+
+void AItemPickup::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	FVector Loc = GetActorLocation();
+	Loc.Z = BaseZ + FMath::Sin(GetWorld()->GetTimeSeconds() * FloatSpeed + PhaseOffset) * FloatAmplitude;
+	SetActorLocation(Loc);
+
+	AddActorWorldRotation(FRotator(0.f, RotationSpeed * DeltaTime, 0.f));
 }
 
 void AItemPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

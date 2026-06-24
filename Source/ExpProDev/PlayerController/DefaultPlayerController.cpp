@@ -7,6 +7,7 @@
 #include "HUD/PlayerOverlay.h"
 #include "HUD/PlayerHUD.h"
 #include "HUD/HotbarWidget.h"
+#include "HUD/QuestWidget.h"
 #include "Character/PlayerCharacter.h"
 
 void ADefaultPlayerController::BeginPlay()
@@ -111,6 +112,16 @@ void ADefaultPlayerController::SetHUDXP(float XP, float XPToNextLevel, int32 Lev
 //
 // 
 //
+
+void ADefaultPlayerController::SetHUDQuestText(const FString& Text)
+{
+	PlayerHUD = PlayerHUD ? PlayerHUD : Cast<APlayerHUD>(GetHUD());
+
+	if (PlayerHUD && PlayerHUD->QuestWidget && PlayerHUD->QuestWidget->QuestText)
+	{
+		PlayerHUD->QuestWidget->QuestText->SetText(FText::FromString(Text));
+	}
+}
 
 void ADefaultPlayerController::OnPossess(APawn* InPawn)
 {

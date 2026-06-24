@@ -143,6 +143,9 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UInventoryComponent* Inventory;
 
+	UPROPERTY(VisibleAnywhere)
+	class UQuestComponent* QuestComponent;
+
 	UPROPERTY()
 	class AItemPickup* PendingPickup;
 

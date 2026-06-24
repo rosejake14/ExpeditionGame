@@ -8,6 +8,7 @@
 #include "PlayerOverlay.h"
 #include "HotbarWidget.h"
 #include "InventoryScreenWidget.h"
+#include "QuestWidget.h"
 #include "Character/PlayerCharacter.h"
 
 void APlayerHUD::BeginPlay()
@@ -16,6 +17,7 @@ void APlayerHUD::BeginPlay()
 	AddPlayerOverlay();
 	AddHotbarWidget();
 	AddInventoryScreen();
+	AddQuestWidget();
 }
 
 void APlayerHUD::AddPlayerOverlay()
@@ -116,6 +118,18 @@ void APlayerHUD::ToggleInventoryScreen()
 	else
 	{
 		PC->SetInputMode(FInputModeGameOnly());
+	}
+}
+
+void APlayerHUD::AddQuestWidget()
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC || !QuestWidgetClass) return;
+
+	QuestWidget = CreateWidget<UQuestWidget>(PC, QuestWidgetClass);
+	if (QuestWidget)
+	{
+		QuestWidget->AddToViewport();
 	}
 }
 
