@@ -115,7 +115,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerStats)
 	float XP = 0.f;
 	UPROPERTY(EditAnywhere, Category = PlayerStats)
-	float XPToNextLevel = 100.f;
+	float BaseXP = 100.f;
+	UPROPERTY(EditAnywhere, Category = PlayerStats)
+	float XPPerLevel = 10.f;
 	void UpdateHUDXP();
 
 	// Player Eliminated:
@@ -210,5 +212,5 @@ public:
 
 	FORCEINLINE int32 GetLevel() const { return Level; }
 	FORCEINLINE float GetXP() const { return XP; }
-	FORCEINLINE float GetXPToNextLevel() const { return XPToNextLevel; }
+	FORCEINLINE float GetXPToNextLevel() const { return BaseXP + (Level - 1) * XPPerLevel; }
 };

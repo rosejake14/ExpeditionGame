@@ -371,9 +371,9 @@ void APlayerCharacter::AddXP(float Amount)
 	XP += Amount;
 
 	const int32 OldLevel = Level;
-	while (XP >= XPToNextLevel)
+	while (XP >= GetXPToNextLevel())
 	{
-		XP -= XPToNextLevel;
+		XP -= GetXPToNextLevel();
 		Level++;
 	}
 
@@ -388,7 +388,7 @@ void APlayerCharacter::UpdateHUDXP()
 	PlayerController = PlayerController == nullptr ? Cast<ADefaultPlayerController>(Controller) : PlayerController;
 	if (PlayerController)
 	{
-		PlayerController->SetHUDXP(XP, XPToNextLevel, Level);
+		PlayerController->SetHUDXP(XP, GetXPToNextLevel(), Level);
 	}
 	else
 	{
