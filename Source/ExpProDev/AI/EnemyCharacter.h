@@ -57,6 +57,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|AI")
 	float RoamWaitMax = 5.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
+	UAnimMontage* AttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
+	float AttackRange = 150.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
+	float AttackDamage = 10.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
+	float AttackCooldown = 1.5f;
+
 private:
 	void DropLoot();
 };

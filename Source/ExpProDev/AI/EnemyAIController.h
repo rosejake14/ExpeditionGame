@@ -7,22 +7,45 @@
 #include "Perception/AIPerceptionTypes.h"
 #include "EnemyAIController.generated.h"
 
-UENUM(BlueprintType)
-enum class EEnemyState : uint8
-{
-	Roam   UMETA(DisplayName = "Roam"),
-	Attack UMETA(DisplayName = "Attack"),
-};
+class UAIPerceptionComponent;
+class UAISenseConfig_Sight;
+
+UENUM()
+enum class EEnemyAIState : uint8 { Roaming, Chasing };
 
 UCLASS()
 class EXPPRODEV_API AEnemyAIController : public AAIController
 {
 	GENERATED_BODY()
 
+	UPROPERTY(VisibleAnywhere, Category = "AI")
+	UAIPerceptionComponent* AIPerception;
+
+	UPROPERTY()
+	UAISenseConfig_Sight* SightConfig;
+
+	EEnemyAIState CurrentState = EEnemyAIState::Roaming;
+
+	UPROPERTY()
+	TObjectPtr<AActor> TargetActor;
+
+	FVector HomeLocation;
+
+	FTimerHandle RoamTimerHandle;
+	FTimerHandle ChaseRefreshHandle;
+	FTimerHandle AttackCooldownHandle;
+	bool bCanAttack = true;
+
 public:
 	AEnemyAIController();
 
-	FORCEINLINE EEnemyState GetCurrentState() const { return CurrentState; }
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	float ChaseRefreshInterval = 0.3f;
+
+	AActor* GetCurrentTarget() const { return TargetActor; }
+	FVector GetHomeLocation()  const { return HomeLocation; }
+
+	void ForceChase(AActor* Target);
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
@@ -30,27 +53,16 @@ protected:
 	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result) override;
 
 private:
-	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAIPerceptionComponent* AIPerception;
-
-	UPROPERTY()
-	class UAISenseConfig_Sight* SightConfig;
-
-	EEnemyState CurrentState = EEnemyState::Roam;
-
-	UPROPERTY()
-	TWeakObjectPtr<AActor> AttackTarget;
-
-	FVector HomeLocation;
-
-	FTimerHandle RoamWaitHandle;
-	FTimerHandle AttackChaseHandle;
-
-	void SetState(EEnemyState NewState);
-
-	void PickNewRoamTarget();
-	void BeginChase();
+	UFUNCTION()
+	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
 	UFUNCTION()
-	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	void OnPerceptionForgotten(AActor* Actor);
+
+	void PickRoamPoint();
+	void StartChasing(AActor* Target);
+	void StopChasing();
+	void RefreshChase();
+	void PerformAttack();
+	void ResetAttackCooldown();
 };

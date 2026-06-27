@@ -37,7 +37,14 @@ void AEnemyCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UD
 	AController* InstigatedBy, AActor* DamageCauser)
 {
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
-	if (Health > 0.f) return;
+
+	if (Health > 0.f)
+	{
+		if (InstigatedBy)
+			if (AEnemyAIController* EnemyAI = Cast<AEnemyAIController>(GetController()))
+				EnemyAI->ForceChase(InstigatedBy->GetPawn());
+		return;
+	}
 
 	// Grant XP and increment kill counter on the player who landed the killing blow
 	if (ADefaultPlayerController* PC = Cast<ADefaultPlayerController>(InstigatedBy))

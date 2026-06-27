@@ -4,133 +4,168 @@
 #include "AI/EnemyCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
-#include "Navigation/PathFollowingComponent.h"
-#include "TimerManager.h"
+#include "NavigationSystem.h"
+#include "Kismet/GameplayStatics.h"
 
 AEnemyAIController::AEnemyAIController()
 {
-	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
-
+	SightConfig  = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 	AIPerception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
 	AIPerception->ConfigureSense(*SightConfig);
 	AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
+	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnPerceptionUpdated);
+	AIPerception->OnTargetPerceptionForgotten.AddDynamic(this, &AEnemyAIController::OnPerceptionForgotten);
 }
 
 void AEnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-
 	HomeLocation = InPawn->GetActorLocation();
 
-	// Apply per-character perception values so designers can tune them per-Blueprint
 	if (AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(InPawn))
 	{
-		SightConfig->SightRadius                    = Enemy->SightRadius;
-		SightConfig->LoseSightRadius                = Enemy->LoseSightRadius;
-		SightConfig->PeripheralVisionAngleDegrees   = Enemy->PeripheralVisionAngle;
+		SightConfig->SightRadius                  = Enemy->SightRadius;
+		SightConfig->LoseSightRadius              = Enemy->LoseSightRadius;
+		SightConfig->PeripheralVisionAngleDegrees = Enemy->PeripheralVisionAngle;
 		SightConfig->SetMaxAge(10.f);
 		SightConfig->DetectionByAffiliation.bDetectEnemies    = true;
 		SightConfig->DetectionByAffiliation.bDetectNeutrals   = true;
 		SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
-
 		AIPerception->ConfigureSense(*SightConfig);
 		AIPerception->RequestStimuliListenerUpdate();
 	}
 
-	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnTargetPerceptionUpdated);
-
-	SetState(EEnemyState::Roam);
+	CurrentState = EEnemyAIState::Roaming;
+	PickRoamPoint();
 }
 
 void AEnemyAIController::OnUnPossess()
 {
-	GetWorldTimerManager().ClearTimer(RoamWaitHandle);
-	GetWorldTimerManager().ClearTimer(AttackChaseHandle);
-	AIPerception->OnTargetPerceptionUpdated.RemoveDynamic(this, &AEnemyAIController::OnTargetPerceptionUpdated);
+	GetWorldTimerManager().ClearTimer(RoamTimerHandle);
+	GetWorldTimerManager().ClearTimer(ChaseRefreshHandle);
 	Super::OnUnPossess();
-}
-
-// ── State Machine ─────────────────────────────────────────────────────────────
-
-void AEnemyAIController::SetState(EEnemyState NewState)
-{
-	if (CurrentState == NewState) return;
-	CurrentState = NewState;
-
-	GetWorldTimerManager().ClearTimer(RoamWaitHandle);
-	GetWorldTimerManager().ClearTimer(AttackChaseHandle);
-	StopMovement();
-
-	switch (CurrentState)
-	{
-	case EEnemyState::Roam:
-		PickNewRoamTarget();
-		break;
-
-	case EEnemyState::Attack:
-		BeginChase();
-		break;
-	}
-}
-
-// ── Roam ──────────────────────────────────────────────────────────────────────
-
-void AEnemyAIController::PickNewRoamTarget()
-{
-	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
-	if (!Enemy) return;
-
-	const float Angle    = FMath::FRandRange(0.f, 2.f * PI);
-	const float Distance = FMath::FRandRange(0.f, Enemy->RoamRadius);
-	const FVector Target = HomeLocation + FVector(FMath::Cos(Angle) * Distance, FMath::Sin(Angle) * Distance, 0.f);
-
-	MoveToLocation(Target, 50.f);
 }
 
 void AEnemyAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
 {
 	Super::OnMoveCompleted(RequestID, Result);
 
-	if (CurrentState != EEnemyState::Roam) return;
-
-	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
-	if (!Enemy) return;
-
-	const float Wait = FMath::FRandRange(Enemy->RoamWaitMin, Enemy->RoamWaitMax);
-	GetWorldTimerManager().SetTimer(RoamWaitHandle, this, &AEnemyAIController::PickNewRoamTarget, Wait, false);
-}
-
-// ── Attack ────────────────────────────────────────────────────────────────────
-
-void AEnemyAIController::BeginChase()
-{
-	// Issue an immediate move, then repeat on a short interval so we track a moving player
-	if (AttackTarget.IsValid())
+	if (CurrentState == EEnemyAIState::Roaming)
 	{
-		MoveToActor(AttackTarget.Get(), 100.f);
+		AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
+		float WaitTime = Enemy
+			? FMath::RandRange(Enemy->RoamWaitMin, Enemy->RoamWaitMax)
+			: 3.f;
+
+		GetWorldTimerManager().SetTimer(RoamTimerHandle, this, &AEnemyAIController::PickRoamPoint, WaitTime, false);
 	}
-
-	GetWorldTimerManager().SetTimer(AttackChaseHandle, this, &AEnemyAIController::BeginChase, 0.3f, false);
 }
 
-// ── Perception ────────────────────────────────────────────────────────────────
-
-void AEnemyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+void AEnemyAIController::PickRoamPoint()
 {
-	if (!Actor) return;
+	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
+	float RoamRadius = Enemy ? Enemy->RoamRadius : 1000.f;
 
-	if (Stimulus.WasSuccessfullySensed())
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	FNavLocation NavLocation;
+
+	if (NavSys && NavSys->GetRandomReachablePointInRadius(HomeLocation, RoamRadius, NavLocation))
 	{
-		AttackTarget = Actor;
-		SetState(EEnemyState::Attack);
+		MoveToLocation(NavLocation.Location, 50.f);
 	}
 	else
 	{
-		// Lost sight — return home and resume roaming
-		AttackTarget = nullptr;
-		CurrentState = EEnemyState::Roam; // set directly so SetState doesn't skip same-state check
-		GetWorldTimerManager().ClearTimer(AttackChaseHandle);
-		MoveToLocation(HomeLocation, 50.f);
-		// Once the move home completes, OnMoveCompleted resumes normal roaming
+		// Nav not ready yet — retry after a short wait
+		GetWorldTimerManager().SetTimer(RoamTimerHandle, this, &AEnemyAIController::PickRoamPoint, 1.f, false);
 	}
+}
+
+void AEnemyAIController::StartChasing(AActor* Target)
+{
+	CurrentState = EEnemyAIState::Chasing;
+	TargetActor  = Target;
+	GetWorldTimerManager().ClearTimer(RoamTimerHandle);
+	MoveToActor(Target, 100.f);
+	GetWorldTimerManager().SetTimer(ChaseRefreshHandle, this, &AEnemyAIController::RefreshChase, ChaseRefreshInterval, true);
+}
+
+void AEnemyAIController::StopChasing()
+{
+	GetWorldTimerManager().ClearTimer(ChaseRefreshHandle);
+	GetWorldTimerManager().ClearTimer(AttackCooldownHandle);
+	bCanAttack   = true;
+	CurrentState = EEnemyAIState::Roaming;
+	TargetActor  = nullptr;
+
+	if (ACharacter* EnemyPawn = Cast<ACharacter>(GetPawn()))
+		EnemyPawn->StopAnimMontage();
+
+	StopMovement();
+	PickRoamPoint();
+}
+
+void AEnemyAIController::RefreshChase()
+{
+	if (!IsValid(TargetActor))
+	{
+		StopChasing();
+		return;
+	}
+
+	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
+	float Range = Enemy ? Enemy->AttackRange : 150.f;
+
+	float DistToTarget = FVector::Dist(GetPawn()->GetActorLocation(), TargetActor->GetActorLocation());
+
+	if (DistToTarget <= Range)
+	{
+		StopMovement();
+		PerformAttack();
+	}
+	else
+	{
+		MoveToActor(TargetActor, 5.f, true, true, false);
+	}
+}
+
+void AEnemyAIController::PerformAttack()
+{
+	if (!bCanAttack || !IsValid(TargetActor)) return;
+
+	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
+	float Damage   = Enemy ? Enemy->AttackDamage   : 10.f;
+	float Cooldown = Enemy ? Enemy->AttackCooldown  : 1.5f;
+
+	if (Enemy && Enemy->AttackMontage)
+		Enemy->PlayAnimMontage(Enemy->AttackMontage);
+
+	UGameplayStatics::ApplyDamage(TargetActor, Damage, this, GetPawn(), UDamageType::StaticClass());
+
+	bCanAttack = false;
+	GetWorldTimerManager().SetTimer(AttackCooldownHandle, this, &AEnemyAIController::ResetAttackCooldown, Cooldown, false);
+}
+
+void AEnemyAIController::ResetAttackCooldown()
+{
+	bCanAttack = true;
+}
+
+void AEnemyAIController::ForceChase(AActor* Target)
+{
+	if (Target && Target != TargetActor)
+		StartChasing(Target);
+}
+
+void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+{
+	if (!Actor || !Actor->ActorHasTag(FName("Player"))) return;
+
+	if (Stimulus.WasSuccessfullySensed())
+		StartChasing(Actor);
+}
+
+void AEnemyAIController::OnPerceptionForgotten(AActor* Actor)
+{
+	if (Actor == TargetActor)
+		StopChasing();
 }

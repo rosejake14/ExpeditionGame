@@ -303,6 +303,8 @@ void APlayerCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 void APlayerCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 	class AController* InstigatedController, class AActor* DamageCauser)
 {
+	if (bEliminated) return;
+
 	Health = FMath::Clamp(Health - Damage,0.f, MaxHealth);
 
 	//
