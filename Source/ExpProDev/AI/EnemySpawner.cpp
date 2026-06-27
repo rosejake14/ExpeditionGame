@@ -44,21 +44,27 @@ void AEnemySpawner::OnConstruction(const FTransform& Transform)
 void AEnemySpawner::BeginPlay()
 {
 	Super::BeginPlay();
-	SpawnEnemies();
+
+	if (SpawnEntries.IsEmpty() || MaxTotalEnemies <= 0) return;
+
+	SpawnedCounts.SetNum(SpawnEntries.Num());
+	TotalSpawned = 0;
+
+	// First batch fires immediately, then repeats every SpawnInterval
+	SpawnBatch();
+	if (TotalSpawned < MaxTotalEnemies)
+	{
+		GetWorldTimerManager().SetTimer(SpawnTimerHandle, this, &AEnemySpawner::SpawnBatch, SpawnInterval, true);
+	}
 }
 
-void AEnemySpawner::SpawnEnemies()
+void AEnemySpawner::SpawnBatch()
 {
-	if (SpawnEntries.IsEmpty()) return;
-
-	TArray<int32> SpawnedCounts;
-	SpawnedCounts.SetNum(SpawnEntries.Num());
-
-	int32 TotalSpawned = 0;
-	const int32 MaxAttempts = MaxTotalEnemies * 3; // guard against repeated spawn failures
+	int32 SpawnedThisBatch = 0;
+	const int32 MaxAttemptsPerBatch = SpawnBatchSize * 3;
 	int32 Attempts = 0;
 
-	while (TotalSpawned < MaxTotalEnemies && Attempts < MaxAttempts)
+	while (SpawnedThisBatch < SpawnBatchSize && TotalSpawned < MaxTotalEnemies && Attempts < MaxAttemptsPerBatch)
 	{
 		++Attempts;
 
@@ -66,14 +72,15 @@ void AEnemySpawner::SpawnEnemies()
 		float TotalWeight = 0.f;
 		for (int32 i = 0; i < SpawnEntries.Num(); ++i)
 		{
-			const FEnemySpawnEntry& Entry = SpawnEntries[i];
-			if (Entry.EnemyClass && SpawnedCounts[i] < Entry.MaxCount)
-			{
-				TotalWeight += Entry.SpawnWeight;
-			}
+			if (SpawnEntries[i].EnemyClass && SpawnedCounts[i] < SpawnEntries[i].MaxCount)
+				TotalWeight += SpawnEntries[i].SpawnWeight;
 		}
 
-		if (TotalWeight <= 0.f) break; // all entries exhausted
+		if (TotalWeight <= 0.f)
+		{
+			GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
+			return;
+		}
 
 		// Weighted random pick
 		float Roll = FMath::FRandRange(0.f, TotalWeight);
@@ -81,56 +88,45 @@ void AEnemySpawner::SpawnEnemies()
 		int32 ChosenIndex = -1;
 		for (int32 i = 0; i < SpawnEntries.Num(); ++i)
 		{
-			const FEnemySpawnEntry& Entry = SpawnEntries[i];
-			if (!Entry.EnemyClass || SpawnedCounts[i] >= Entry.MaxCount) continue;
-
-			Accumulated += Entry.SpawnWeight;
-			if (Roll <= Accumulated)
-			{
-				ChosenIndex = i;
-				break;
-			}
+			if (!SpawnEntries[i].EnemyClass || SpawnedCounts[i] >= SpawnEntries[i].MaxCount) continue;
+			Accumulated += SpawnEntries[i].SpawnWeight;
+			if (Roll <= Accumulated) { ChosenIndex = i; break; }
 		}
 
 		if (ChosenIndex < 0) continue;
 
-		// Random point inside the spawn radius circle
-		const float Angle = FMath::FRandRange(0.f, 2.f * PI);
+		// Random point inside the spawn radius, traced to ground
+		const float Angle    = FMath::FRandRange(0.f, 2.f * PI);
 		const float Distance = FMath::FRandRange(0.f, SpawnRadius);
-		const FVector Offset(FMath::Cos(Angle) * Distance, FMath::Sin(Angle) * Distance, 0.f);
-		const FVector CandidateXY = GetActorLocation() + Offset;
-
-		// Trace downward from well above to find the actual ground surface
-		const FVector TraceStart(CandidateXY.X, CandidateXY.Y, CandidateXY.Z + 2000.f);
-		const FVector TraceEnd  (CandidateXY.X, CandidateXY.Y, CandidateXY.Z - 2000.f);
+		const FVector CandidateXY = GetActorLocation() + FVector(FMath::Cos(Angle) * Distance, FMath::Sin(Angle) * Distance, 0.f);
 
 		FHitResult HitResult;
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this);
 
 		FVector SpawnLocation = CandidateXY;
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_WorldStatic, QueryParams))
+		if (GetWorld()->LineTraceSingleByChannel(HitResult,
+			FVector(CandidateXY.X, CandidateXY.Y, CandidateXY.Z + 2000.f),
+			FVector(CandidateXY.X, CandidateXY.Y, CandidateXY.Z - 2000.f),
+			ECC_WorldStatic, QueryParams))
 		{
 			SpawnLocation = HitResult.ImpactPoint;
-
-			// Lift by the capsule half-height so the character stands on the surface
 			const ACharacter* CDO = SpawnEntries[ChosenIndex].EnemyClass->GetDefaultObject<ACharacter>();
 			if (CDO && CDO->GetCapsuleComponent())
-			{
 				SpawnLocation.Z += CDO->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-			}
 		}
 
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-		ACharacter* Spawned = GetWorld()->SpawnActor<ACharacter>(
-			SpawnEntries[ChosenIndex].EnemyClass, SpawnLocation, FRotator::ZeroRotator, Params);
-
-		if (Spawned)
+		if (GetWorld()->SpawnActor<ACharacter>(SpawnEntries[ChosenIndex].EnemyClass, SpawnLocation, FRotator::ZeroRotator, Params))
 		{
 			SpawnedCounts[ChosenIndex]++;
 			TotalSpawned++;
+			SpawnedThisBatch++;
 		}
 	}
+
+	if (TotalSpawned >= MaxTotalEnemies)
+		GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
 }

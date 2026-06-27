@@ -35,9 +35,17 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Spawner")
 	TArray<FEnemySpawnEntry> SpawnEntries;
 
-	// Hard cap on total enemies spawned across all types
+	// Total enemies to spawn before the spawner stops
 	UPROPERTY(EditAnywhere, Category = "Spawner", meta = (ClampMin = 0))
 	int32 MaxTotalEnemies = 10;
+
+	// How many enemies to spawn per batch
+	UPROPERTY(EditAnywhere, Category = "Spawner", meta = (ClampMin = 1))
+	int32 SpawnBatchSize = 1;
+
+	// Seconds between each batch
+	UPROPERTY(EditAnywhere, Category = "Spawner", meta = (ClampMin = 0.f))
+	float SpawnInterval = 5.f;
 
 	// Radius around this actor in which enemies are placed
 	UPROPERTY(EditAnywhere, Category = "Spawner", meta = (ClampMin = 0.f))
@@ -48,7 +56,6 @@ protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 private:
-	// Sphere component that visualises SpawnRadius in the editor (hidden in game)
 	UPROPERTY(VisibleAnywhere)
 	class USphereComponent* RangeVisualization;
 
@@ -57,5 +64,9 @@ private:
 	class UBillboardComponent* SpriteComponent;
 #endif
 
-	void SpawnEnemies();
+	TArray<int32> SpawnedCounts;
+	int32 TotalSpawned = 0;
+	FTimerHandle SpawnTimerHandle;
+
+	void SpawnBatch();
 };
