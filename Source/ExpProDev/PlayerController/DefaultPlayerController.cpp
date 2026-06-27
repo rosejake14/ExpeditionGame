@@ -130,6 +130,8 @@ void ADefaultPlayerController::OnPossess(APawn* InPawn)
 	APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(InPawn);
 	if (PlayerCharacter)
 	{
+		PlayerCharacter->LoadPlayerData();
+
 		SetHUDHealth(PlayerCharacter->GetHealth(), PlayerCharacter->GetMaxHealth());
 		SetHUDXP(PlayerCharacter->GetXP(), PlayerCharacter->GetXPToNextLevel(), PlayerCharacter->GetLevel());
 

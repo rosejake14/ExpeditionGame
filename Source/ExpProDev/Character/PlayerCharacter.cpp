@@ -23,6 +23,8 @@
 #include "HUD/PlayerHUD.h"
 #include "Quest/QuestManagerComponent.h"
 #include "Interaction/Interactable.h"
+#include "Save/ExpProSaveGame.h"
+#include "Kismet/GameplayStatics.h"
 
 
 // Sets default values
@@ -89,6 +91,9 @@ void APlayerCharacter::BeginPlay()
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 
 	UpdateHUDHealth();
+
+	FTimerHandle XPHUDTimer;
+	GetWorldTimerManager().SetTimer(XPHUDTimer, this, &APlayerCharacter::UpdateHUDXP, 0.2f, false);
 
 	// If on server, and a proj bullet hits, it will recieve damage.
 	if (HasAuthority())
@@ -365,6 +370,7 @@ void APlayerCharacter::AddXP(float Amount)
 
 	XP += Amount;
 
+	const int32 OldLevel = Level;
 	while (XP >= XPToNextLevel)
 	{
 		XP -= XPToNextLevel;
@@ -372,6 +378,9 @@ void APlayerCharacter::AddXP(float Amount)
 	}
 
 	UpdateHUDXP();
+
+	if (Level != OldLevel)
+		SavePlayerData();
 }
 
 void APlayerCharacter::UpdateHUDXP()
@@ -494,6 +503,49 @@ void APlayerCharacter::SprintButtonPressed(const FInputActionInstance& Instance)
 void APlayerCharacter::SprintButtonReleased(const FInputActionInstance& Instance)
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+void APlayerCharacter::WipeSave()
+{
+	XP    = 0.f;
+	Level = 1;
+	UGameplayStatics::DeleteGameInSlot(TEXT("PlayerSave"), 0);
+	UpdateHUDXP();
+	UE_LOG(LogTemp, Warning, TEXT("WipeSave: save deleted, XP and Level reset."));
+}
+
+void APlayerCharacter::SetLevel(int32 NewLevel)
+{
+	if (NewLevel < 1) return;
+	Level = NewLevel;
+	XP    = 0.f;
+	SavePlayerData();
+	UpdateHUDXP();
+	UE_LOG(LogTemp, Warning, TEXT("SetLevel: player level set to %d."), NewLevel);
+}
+
+void APlayerCharacter::SavePlayerData()
+{
+	UExpProSaveGame* Save = Cast<UExpProSaveGame>(
+		UGameplayStatics::CreateSaveGameObject(UExpProSaveGame::StaticClass()));
+	if (!Save) return;
+
+	Save->XP    = XP;
+	Save->Level = Level;
+
+	UGameplayStatics::SaveGameToSlot(Save, TEXT("PlayerSave"), 0);
+}
+
+void APlayerCharacter::LoadPlayerData()
+{
+	if (!UGameplayStatics::DoesSaveGameExist(TEXT("PlayerSave"), 0)) return;
+
+	UExpProSaveGame* Save = Cast<UExpProSaveGame>(
+		UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSave"), 0));
+	if (!Save) return;
+
+	XP    = Save->XP;
+	Level = Save->Level;
 }
 
 // Will only be called on the server.

@@ -202,6 +202,12 @@ public:
 	// Public so quests / pickups / kill rewards can grant XP without depending on each other.
 	void AddXP(float Amount);
 
+	void SavePlayerData();
+	void LoadPlayerData();
+
+	UFUNCTION(Exec) void WipeSave();
+	UFUNCTION(Exec) void SetLevel(int32 NewLevel);
+
 	FORCEINLINE int32 GetLevel() const { return Level; }
 	FORCEINLINE float GetXP() const { return XP; }
 	FORCEINLINE float GetXPToNextLevel() const { return XPToNextLevel; }
