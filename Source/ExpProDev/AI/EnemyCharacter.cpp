@@ -6,6 +6,7 @@
 #include "Character/PlayerCharacter.h"
 #include "PlayerController/DefaultPlayerController.h"
 #include "Inventory/ItemPickup.h"
+#include "Quest/QuestManagerComponent.h"
 
 AEnemyCharacter::AEnemyCharacter()
 {
@@ -53,6 +54,8 @@ void AEnemyCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UD
 		if (APlayerCharacter* Killer = Cast<APlayerCharacter>(PC->GetPawn()))
 		{
 			Killer->AddXP(XPReward);
+			if (UQuestManagerComponent* QM = Killer->GetQuestManager())
+				QM->NotifyEnemyKilled(GetClass());
 		}
 	}
 

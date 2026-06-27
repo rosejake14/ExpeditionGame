@@ -7,6 +7,7 @@
 #include "QuestManagerComponent.generated.h"
 
 class UQuestDefinition;
+class AQuestGiverNPC;
 
 USTRUCT()
 struct FActiveQuestState
@@ -16,7 +17,12 @@ struct FActiveQuestState
 	UPROPERTY()
 	TObjectPtr<UQuestDefinition> Definition;
 
-	bool bItemCollected = false;
+	UPROPERTY()
+	TObjectPtr<AQuestGiverNPC> QuestGiver;
+
+	bool bItemCollected     = false;
+	bool bObjectiveComplete = false;
+	int32 KillCount         = 0;
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -27,8 +33,12 @@ public:
 	UQuestManagerComponent();
 	virtual void BeginPlay() override;
 
-	void AcceptQuest(UQuestDefinition* Quest);
+	void AcceptQuest(UQuestDefinition* Quest, AQuestGiverNPC* Giver);
 	void NotifyQuestComplete(UQuestDefinition* Quest);
+	void NotifyEnemyKilled(TSubclassOf<ACharacter> EnemyClass);
+
+	// Returns true if the player had a completed quest from this NPC and rewards were granted
+	bool TryCompleteQuestFromNPC(AQuestGiverNPC* NPC);
 
 	bool HasActiveQuest() const { return ActiveQuest.Definition != nullptr; }
 	bool IsItemCollectedFor(UQuestDefinition* Quest) const;

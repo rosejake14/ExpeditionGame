@@ -143,10 +143,10 @@ void APlayerHUD::AddQuestWidget()
 	}
 }
 
-void APlayerHUD::ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests)
+void APlayerHUD::ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests, AQuestGiverNPC* Giver)
 {
 	if (!QuestSelectionWidget) return;
-	QuestSelectionWidget->InitQuestList(Player, Quests);
+	QuestSelectionWidget->InitQuestList(Player, Quests, Giver);
 }
 
 void APlayerHUD::DrawHUD()

@@ -8,6 +8,7 @@
 
 class UQuestDefinition;
 class APlayerCharacter;
+class AQuestGiverNPC;
 
 UCLASS()
 class EXPPRODEV_API UQuestSelectionWidget : public UUserWidget
@@ -15,7 +16,7 @@ class EXPPRODEV_API UQuestSelectionWidget : public UUserWidget
 	GENERATED_BODY()
 public:
 	// Called by AQuestGiverNPC to populate and show the panel
-	void InitQuestList(APlayerCharacter* InPlayer, const TArray<UQuestDefinition*>& Quests);
+	void InitQuestList(APlayerCharacter* InPlayer, const TArray<UQuestDefinition*>& Quests, AQuestGiverNPC* InGiver);
 
 	// Call from Blueprint button OnClicked — accepts the quest and closes the panel
 	UFUNCTION(BlueprintCallable, Category = "Quest")
@@ -36,4 +37,7 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<APlayerCharacter> OwningPlayer;
+
+	UPROPERTY()
+	TObjectPtr<AQuestGiverNPC> QuestGiver;
 };

@@ -19,6 +19,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Quest")
 	TObjectPtr<UQuestDefinition> LinkedQuest;
 
+	// Disable the return-point trigger — quest completion now happens at the Quest Giver NPC
+	UPROPERTY(EditAnywhere, Category = "Quest")
+	bool bEnabled = false;
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -12,6 +12,7 @@ class UQuestWidget;
 class UQuestSelectionWidget;
 class UQuestDefinition;
 class APlayerCharacter;
+class AQuestGiverNPC;
 
 USTRUCT(BlueprintType)
 struct FHUDPackage
@@ -63,7 +64,7 @@ public:
 	UPROPERTY()
 	UQuestSelectionWidget* QuestSelectionWidget;
 
-	void ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests);
+	void ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests, AQuestGiverNPC* Giver);
 
 protected:
 	virtual void BeginPlay() override;

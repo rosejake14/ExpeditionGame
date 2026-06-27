@@ -6,9 +6,10 @@
 #include "Character/PlayerCharacter.h"
 #include "GameFramework/PlayerController.h"
 
-void UQuestSelectionWidget::InitQuestList(APlayerCharacter* InPlayer, const TArray<UQuestDefinition*>& Quests)
+void UQuestSelectionWidget::InitQuestList(APlayerCharacter* InPlayer, const TArray<UQuestDefinition*>& Quests, AQuestGiverNPC* InGiver)
 {
 	OwningPlayer = InPlayer;
+	QuestGiver   = InGiver;
 	QuestOptions.Reset();
 	for (UQuestDefinition* Q : Quests)
 		if (Q) QuestOptions.Add(Q);
@@ -30,7 +31,7 @@ void UQuestSelectionWidget::SelectQuest(UQuestDefinition* Quest)
 	if (!Quest || !OwningPlayer) return;
 
 	if (UQuestManagerComponent* QM = OwningPlayer->FindComponentByClass<UQuestManagerComponent>())
-		QM->AcceptQuest(Quest);
+		QM->AcceptQuest(Quest, QuestGiver);
 
 	ClosePanel();
 }

@@ -25,12 +25,24 @@ void UQuestManagerComponent::BeginPlay()
 	UpdateHUD();
 }
 
-void UQuestManagerComponent::AcceptQuest(UQuestDefinition* Quest)
+void UQuestManagerComponent::AcceptQuest(UQuestDefinition* Quest, AQuestGiverNPC* Giver)
 {
 	if (!Quest) return;
-	ActiveQuest.Definition     = Quest;
-	ActiveQuest.bItemCollected = false;
+	ActiveQuest.Definition        = Quest;
+	ActiveQuest.QuestGiver        = Giver;
+	ActiveQuest.bItemCollected    = false;
+	ActiveQuest.bObjectiveComplete = false;
+	ActiveQuest.KillCount         = 0;
 	UpdateHUD();
+}
+
+bool UQuestManagerComponent::TryCompleteQuestFromNPC(AQuestGiverNPC* NPC)
+{
+	if (!ActiveQuest.Definition || !ActiveQuest.bObjectiveComplete) return false;
+	if (ActiveQuest.QuestGiver != NPC) return false;
+
+	NotifyQuestComplete(ActiveQuest.Definition);
+	return true;
 }
 
 bool UQuestManagerComponent::IsItemCollectedFor(UQuestDefinition* Quest) const
@@ -42,21 +54,23 @@ void UQuestManagerComponent::NotifyQuestComplete(UQuestDefinition* Quest)
 {
 	if (!Quest || ActiveQuest.Definition != Quest) return;
 
-	// Grant XP
 	if (APlayerCharacter* Owner = Cast<APlayerCharacter>(GetOwner()))
 	{
 		Owner->AddXP(Quest->XPReward);
 
-		// Remove required item from inventory
-		if (UInventoryComponent* Inv = Owner->GetInventory())
+		// Item Collection only: remove the item on return
+		if (Quest->QuestType == EQuestType::ItemCollection)
 		{
-			for (int32 i = 0; i < Inv->GetTotalSlotCount(); ++i)
+			if (UInventoryComponent* Inv = Owner->GetInventory())
 			{
-				const FInventorySlot& Slot = Inv->GetSlot(i);
-				if (Slot.ItemDef == Quest->RequiredItem && Slot.Quantity > 0)
+				for (int32 i = 0; i < Inv->GetTotalSlotCount(); ++i)
 				{
-					Inv->RemoveItem(i, Quest->RequiredQuantity);
-					break;
+					const FInventorySlot& Slot = Inv->GetSlot(i);
+					if (Slot.ItemDef == Quest->RequiredItem && Slot.Quantity > 0)
+					{
+						Inv->RemoveItem(i, Quest->RequiredQuantity);
+						break;
+					}
 				}
 			}
 		}
@@ -68,9 +82,28 @@ void UQuestManagerComponent::NotifyQuestComplete(UQuestDefinition* Quest)
 	ActiveQuest = FActiveQuestState();
 }
 
+void UQuestManagerComponent::NotifyEnemyKilled(TSubclassOf<ACharacter> KilledClass)
+{
+	if (!ActiveQuest.Definition) return;
+	if (ActiveQuest.Definition->QuestType != EQuestType::EnemyElimination) return;
+
+	// Null EnemyClass on the quest means "any enemy counts"
+	if (ActiveQuest.Definition->EnemyClass && !KilledClass->IsChildOf(ActiveQuest.Definition->EnemyClass)) return;
+
+	ActiveQuest.KillCount++;
+	UpdateHUD();
+
+	if (ActiveQuest.KillCount >= ActiveQuest.Definition->KillsRequired)
+	{
+		ActiveQuest.bObjectiveComplete = true;
+		UpdateHUD();
+	}
+}
+
 void UQuestManagerComponent::OnInventoryChanged()
 {
 	if (!ActiveQuest.Definition || ActiveQuest.bItemCollected) return;
+	if (ActiveQuest.Definition->QuestType != EQuestType::ItemCollection) return;
 
 	APlayerCharacter* Owner = Cast<APlayerCharacter>(GetOwner());
 	if (!Owner) return;
@@ -88,7 +121,8 @@ void UQuestManagerComponent::OnInventoryChanged()
 
 	if (Found >= ActiveQuest.Definition->RequiredQuantity)
 	{
-		ActiveQuest.bItemCollected = true;
+		ActiveQuest.bItemCollected     = true;
+		ActiveQuest.bObjectiveComplete = true;
 		UpdateHUD();
 	}
 }
@@ -104,11 +138,28 @@ void UQuestManagerComponent::UpdateHUD()
 		return;
 	}
 
-	const FText& Objective = ActiveQuest.bItemCollected
-		? ActiveQuest.Definition->ReturnObjective
-		: ActiveQuest.Definition->CollectObjective;
+	if (ActiveQuest.bObjectiveComplete)
+	{
+		PC->SetHUDQuestText(TEXT("Return to Quest Giver"));
+		return;
+	}
 
-	PC->SetHUDQuestText(Objective.ToString());
+	FString Text;
+	switch (ActiveQuest.Definition->QuestType)
+	{
+	case EQuestType::ItemCollection:
+		Text = ActiveQuest.Definition->CollectObjective.ToString();
+		break;
+
+	case EQuestType::EnemyElimination:
+		Text = FString::Printf(TEXT("%s: %d/%d"),
+			*ActiveQuest.Definition->EliminationObjective.ToString(),
+			ActiveQuest.KillCount,
+			ActiveQuest.Definition->KillsRequired);
+		break;
+	}
+
+	PC->SetHUDQuestText(Text);
 }
 
 ADefaultPlayerController* UQuestManagerComponent::GetPC()

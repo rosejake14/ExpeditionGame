@@ -28,6 +28,8 @@ void AObjectReturnPoint::BeginPlay()
 void AObjectReturnPoint::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (!bEnabled) return;
+
 	APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor);
 	if (!Player) return;
 

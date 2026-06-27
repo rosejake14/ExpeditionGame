@@ -2,6 +2,7 @@
 
 #include "Quest/QuestGiverNPC.h"
 #include "Quest/QuestDefinition.h"
+#include "Quest/QuestManagerComponent.h"
 #include "Character/PlayerCharacter.h"
 #include "HUD/PlayerHUD.h"
 #include "Components/SphereComponent.h"
@@ -30,7 +31,18 @@ void AQuestGiverNPC::BeginPlay()
 
 void AQuestGiverNPC::Interact(APlayerCharacter* Player)
 {
-	if (!Player || AvailableQuests.IsEmpty()) return;
+	if (!Player) return;
+
+	UQuestManagerComponent* QM = Player->GetQuestManager();
+
+	// If the player has completed a quest from this NPC, grant rewards immediately
+	if (QM && QM->TryCompleteQuestFromNPC(this))
+		return;
+
+	// Block new quest selection while a quest is already active
+	if (QM && QM->HasActiveQuest()) return;
+
+	if (AvailableQuests.IsEmpty()) return;
 
 	APlayerController* PC = Player->GetController<APlayerController>();
 	if (!PC) return;
@@ -42,7 +54,7 @@ void AQuestGiverNPC::Interact(APlayerCharacter* Player)
 	for (TObjectPtr<UQuestDefinition>& Q : AvailableQuests)
 		if (Q) Quests.Add(Q);
 
-	HUD->ShowQuestSelection(Player, Quests);
+	HUD->ShowQuestSelection(Player, Quests, this);
 }
 
 void AQuestGiverNPC::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
