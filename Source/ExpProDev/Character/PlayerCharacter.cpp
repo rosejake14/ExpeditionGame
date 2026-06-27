@@ -85,8 +85,10 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
 	UpdateHUDHealth();
-	
+
 	// If on server, and a proj bullet hits, it will recieve damage.
 	if (HasAuthority())
 	{
@@ -170,6 +172,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			Input->BindAction(ScrollHotbarAction, ETriggerEvent::Triggered, this, &APlayerCharacter::ScrollHotbar);
 		if (ToggleInventoryAction)
 			Input->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &APlayerCharacter::ToggleInventoryButtonPressed);
+		if (SprintAction)
+		{
+			Input->BindAction(SprintAction, ETriggerEvent::Started,   this, &APlayerCharacter::SprintButtonPressed);
+			Input->BindAction(SprintAction, ETriggerEvent::Completed, this, &APlayerCharacter::SprintButtonReleased);
+		}
 	}
 }
 
@@ -481,6 +488,16 @@ void APlayerCharacter::ClearPendingPickupIfMatch(AItemPickup* Pickup)
 {
 	if (PendingPickup == Pickup)
 		PendingPickup = nullptr;
+}
+
+void APlayerCharacter::SprintButtonPressed(const FInputActionInstance& Instance)
+{
+	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+}
+
+void APlayerCharacter::SprintButtonReleased(const FInputActionInstance& Instance)
+{
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
 // Will only be called on the server.

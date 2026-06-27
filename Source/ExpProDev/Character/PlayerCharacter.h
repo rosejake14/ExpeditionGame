@@ -62,6 +62,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* ToggleInventoryAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* SprintAction;
+
+	UPROPERTY(EditAnywhere, Category = "PlayerStats")
+	float WalkSpeed = 600.f;
+
+	UPROPERTY(EditAnywhere, Category = "PlayerStats")
+	float SprintSpeed = 1000.f;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -83,6 +92,8 @@ protected:
 	void InteractButtonPressed(const FInputActionInstance& Instance);
 	void ScrollHotbar(const FInputActionInstance& Instance);
 	void ToggleInventoryButtonPressed(const FInputActionInstance& Instance);
+	void SprintButtonPressed(const FInputActionInstance& Instance);
+	void SprintButtonReleased(const FInputActionInstance& Instance);
 	void AimOffset(float DeltaTime);
 	UFUNCTION() // Callback events ALWAYS need to be UFUNCTIONS
 	void RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatedController, class AActor* DamageCauser);
