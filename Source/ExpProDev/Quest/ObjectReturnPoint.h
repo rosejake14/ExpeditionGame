@@ -6,12 +6,18 @@
 #include "GameFramework/Actor.h"
 #include "ObjectReturnPoint.generated.h"
 
+class UQuestDefinition;
+
 UCLASS()
 class EXPPRODEV_API AObjectReturnPoint : public AActor
 {
 	GENERATED_BODY()
 public:
 	AObjectReturnPoint();
+
+	// If set, only completes this specific quest. If null, completes any active quest with item collected.
+	UPROPERTY(EditAnywhere, Category = "Quest")
+	TObjectPtr<UQuestDefinition> LinkedQuest;
 
 protected:
 	virtual void BeginPlay() override;

@@ -9,7 +9,9 @@
 #include "HotbarWidget.h"
 #include "InventoryScreenWidget.h"
 #include "QuestWidget.h"
+#include "QuestSelectionWidget.h"
 #include "Character/PlayerCharacter.h"
+#include "Quest/QuestDefinition.h"
 
 void APlayerHUD::BeginPlay()
 {
@@ -128,9 +130,23 @@ void APlayerHUD::AddQuestWidget()
 
 	QuestWidget = CreateWidget<UQuestWidget>(PC, QuestWidgetClass);
 	if (QuestWidget)
-	{
 		QuestWidget->AddToViewport();
+
+	if (QuestSelectionWidgetClass)
+	{
+		QuestSelectionWidget = CreateWidget<UQuestSelectionWidget>(PC, QuestSelectionWidgetClass);
+		if (QuestSelectionWidget)
+		{
+			QuestSelectionWidget->AddToViewport(2);
+			QuestSelectionWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
+}
+
+void APlayerHUD::ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests)
+{
+	if (!QuestSelectionWidget) return;
+	QuestSelectionWidget->InitQuestList(Player, Quests);
 }
 
 void APlayerHUD::DrawHUD()

@@ -155,10 +155,10 @@ private:
 	class UInventoryComponent* Inventory;
 
 	UPROPERTY(VisibleAnywhere)
-	class UQuestComponent* QuestComponent;
+	class UQuestManagerComponent* QuestManager;
 
 	UPROPERTY()
-	class AItemPickup* PendingPickup;
+	TObjectPtr<AActor> PendingInteractable;
 
 	UFUNCTION(Server, Reliable) // Reliable - garuntee to be executed. Unreliable - potential to be dropped.
 	void ServerEquipButtonPressed();
@@ -181,10 +181,11 @@ public:
 	bool IsWeaponEquipped();
 	bool IsAiming();
 
-	void SetPendingPickup(class AItemPickup* Pickup);
-	void ClearPendingPickupIfMatch(class AItemPickup* Pickup);
+	void SetPendingInteractable(AActor* Interactable);
+	void ClearPendingInteractableIfMatch(AActor* Interactable);
 
 	FORCEINLINE class UInventoryComponent* GetInventory() const { return Inventory; }
+	FORCEINLINE class UQuestManagerComponent* GetQuestManager() const { return QuestManager; }
 
 	// For calling ONLY ON THE SERVER
 	void Eliminated();

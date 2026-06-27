@@ -1,7 +1,8 @@
 // No Rights Reserved @ Team Expedition
 
 #include "Quest/ObjectReturnPoint.h"
-#include "Quest/QuestComponent.h"
+#include "Quest/QuestManagerComponent.h"
+#include "Quest/QuestDefinition.h"
 #include "Components/SphereComponent.h"
 #include "Character/PlayerCharacter.h"
 
@@ -30,9 +31,10 @@ void AObjectReturnPoint::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor);
 	if (!Player) return;
 
-	UQuestComponent* Quest = Player->FindComponentByClass<UQuestComponent>();
-	if (Quest && Quest->IsItemCollected())
-	{
-		Quest->NotifyQuestComplete();
-	}
+	UQuestManagerComponent* QM = Player->GetQuestManager();
+	if (!QM || !QM->HasActiveQuest()) return;
+
+	UQuestDefinition* Target = LinkedQuest ? LinkedQuest.Get() : QM->GetActiveQuestDefinition();
+	if (QM->IsItemCollectedFor(Target))
+		QM->NotifyQuestComplete(Target);
 }

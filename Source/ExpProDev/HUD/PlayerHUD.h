@@ -9,6 +9,9 @@
 class UInventoryComponent;
 class UInventoryScreenWidget;
 class UQuestWidget;
+class UQuestSelectionWidget;
+class UQuestDefinition;
+class APlayerCharacter;
 
 USTRUCT(BlueprintType)
 struct FHUDPackage
@@ -54,6 +57,13 @@ public:
 	TSubclassOf<UQuestWidget> QuestWidgetClass;
 	UPROPERTY()
 	UQuestWidget* QuestWidget;
+
+	UPROPERTY(EditAnywhere, Category = "Quest")
+	TSubclassOf<UQuestSelectionWidget> QuestSelectionWidgetClass;
+	UPROPERTY()
+	UQuestSelectionWidget* QuestSelectionWidget;
+
+	void ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests);
 
 protected:
 	virtual void BeginPlay() override;

@@ -40,6 +40,17 @@ void AItemPickup::Tick(float DeltaTime)
 	AddActorWorldRotation(FRotator(0.f, RotationSpeed * DeltaTime, 0.f));
 }
 
+void AItemPickup::Interact(APlayerCharacter* Player)
+{
+	if (!Player || !ItemDef) return;
+	UInventoryComponent* Inv = Player->GetInventory();
+	if (Inv && Inv->AddItem(ItemDef, Quantity))
+	{
+		Player->ClearPendingInteractableIfMatch(this);
+		Destroy();
+	}
+}
+
 void AItemPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -50,22 +61,17 @@ void AItemPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 	{
 		UInventoryComponent* Inv = Player->GetInventory();
 		if (Inv && Inv->AddItem(ItemDef, Quantity))
-		{
 			Destroy();
-		}
 	}
 	else
 	{
-		Player->SetPendingPickup(this);
+		Player->SetPendingInteractable(this);
 	}
 }
 
 void AItemPickup::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor);
-	if (Player)
-	{
-		Player->ClearPendingPickupIfMatch(this);
-	}
+	if (APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor))
+		Player->ClearPendingInteractableIfMatch(this);
 }

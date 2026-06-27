@@ -78,7 +78,7 @@ void UQuestComponent::NotifyQuestComplete()
 
 	if (PlayerController)
 	{
-		PlayerController->SetHUDQuestText(TEXT("Quest Complete!"));
+		PlayerController->SetHUDQuestText(TEXT("Quest Completed"));
 	}
 }
 
@@ -92,7 +92,6 @@ void UQuestComponent::UpdateHUD()
 
 	if (!PlayerController) return;
 
-	const int32 Current = bItemCollected ? 1 : 0;
-	const FString Text = FString::Printf(TEXT("Item Collected: %d/1"), Current);
+	const FString Text = bItemCollected ? TEXT("Return Item") : TEXT("Collect Item");
 	PlayerController->SetHUDQuestText(Text);
 }

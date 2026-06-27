@@ -21,7 +21,8 @@
 #include "Inventory/InventoryComponent.h"
 #include "Inventory/ItemPickup.h"
 #include "HUD/PlayerHUD.h"
-#include "Quest/QuestComponent.h"
+#include "Quest/QuestManagerComponent.h"
+#include "Interaction/Interactable.h"
 
 
 // Sets default values
@@ -50,8 +51,8 @@ APlayerCharacter::APlayerCharacter()
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combat->SetIsReplicated(true);
 
-	Inventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
-	QuestComponent = CreateDefaultSubobject<UQuestComponent>(TEXT("QuestComponent"));
+	Inventory    = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
+	QuestManager = CreateDefaultSubobject<UQuestManagerComponent>(TEXT("QuestManager"));
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
@@ -453,14 +454,9 @@ void APlayerCharacter::MulticastEliminated_Implementation()
 
 void APlayerCharacter::InteractButtonPressed(const FInputActionInstance& Instance)
 {
-	if (!PendingPickup || !Inventory) return;
-
-	if (Inventory->AddItem(PendingPickup->ItemDef, PendingPickup->Quantity))
-	{
-		AItemPickup* PickupToDestroy = PendingPickup;
-		PendingPickup = nullptr;
-		PickupToDestroy->Destroy();
-	}
+	if (!PendingInteractable) return;
+	if (IInteractable* I = Cast<IInteractable>(PendingInteractable))
+		I->Interact(this);
 }
 
 void APlayerCharacter::ToggleInventoryButtonPressed(const FInputActionInstance& Instance)
@@ -479,15 +475,15 @@ void APlayerCharacter::ScrollHotbar(const FInputActionInstance& Instance)
 	Inventory->SetActiveHotbarIndex(NewIndex);
 }
 
-void APlayerCharacter::SetPendingPickup(AItemPickup* Pickup)
+void APlayerCharacter::SetPendingInteractable(AActor* Interactable)
 {
-	PendingPickup = Pickup;
+	PendingInteractable = Interactable;
 }
 
-void APlayerCharacter::ClearPendingPickupIfMatch(AItemPickup* Pickup)
+void APlayerCharacter::ClearPendingInteractableIfMatch(AActor* Interactable)
 {
-	if (PendingPickup == Pickup)
-		PendingPickup = nullptr;
+	if (PendingInteractable == Interactable)
+		PendingInteractable = nullptr;
 }
 
 void APlayerCharacter::SprintButtonPressed(const FInputActionInstance& Instance)

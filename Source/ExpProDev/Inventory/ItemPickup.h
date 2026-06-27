@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interaction/Interactable.h"
 #include "ItemPickup.generated.h"
 
 UCLASS()
-class EXPPRODEV_API AItemPickup : public AActor
+class EXPPRODEV_API AItemPickup : public AActor, public IInteractable
 {
 	GENERATED_BODY()
 public:
@@ -27,6 +28,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Pickup|Animation")
 	float RotationSpeed = 90.f;
+
+	virtual void Interact(APlayerCharacter* Player) override;
 
 protected:
 	virtual void BeginPlay() override;
