@@ -34,6 +34,7 @@ void UQuestManagerComponent::AcceptQuest(UQuestDefinition* Quest, AQuestGiverNPC
 	ActiveQuest.bObjectiveComplete = false;
 	ActiveQuest.KillCount         = 0;
 	UpdateHUD();
+	OnInventoryChanged();
 }
 
 bool UQuestManagerComponent::TryCompleteQuestFromNPC(AQuestGiverNPC* NPC)
