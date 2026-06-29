@@ -30,4 +30,9 @@ protected:
 private:
 	UPROPERTY(VisibleAnywhere)
 	class UBoxComponent* BoxCollision;
+
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(VisibleAnywhere, Category = "Extraction")
+	class UBillboardComponent* SpriteComponent;
+#endif
 };
