@@ -46,6 +46,18 @@ bool UQuestManagerComponent::TryCompleteQuestFromNPC(AQuestGiverNPC* NPC)
 	return true;
 }
 
+void UQuestManagerComponent::CancelActiveQuest()
+{
+	if (!ActiveQuest.Definition) return;
+	ActiveQuest = FActiveQuestState();
+	UpdateHUD();
+}
+
+bool UQuestManagerComponent::HasActiveQuestFrom(AQuestGiverNPC* NPC) const
+{
+	return ActiveQuest.Definition != nullptr && ActiveQuest.QuestGiver == NPC;
+}
+
 bool UQuestManagerComponent::IsItemCollectedFor(UQuestDefinition* Quest) const
 {
 	return ActiveQuest.Definition == Quest && ActiveQuest.bItemCollected;
@@ -80,6 +92,7 @@ void UQuestManagerComponent::NotifyQuestComplete(UQuestDefinition* Quest)
 	if (ADefaultPlayerController* PC = GetPC())
 		PC->SetHUDQuestText(Quest->CompleteText.ToString());
 
+	CompletedQuests.Add(Quest);
 	ActiveQuest = FActiveQuestState();
 }
 

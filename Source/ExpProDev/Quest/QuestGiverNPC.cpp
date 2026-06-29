@@ -39,7 +39,14 @@ void AQuestGiverNPC::Interact(APlayerCharacter* Player)
 	if (QM && QM->TryCompleteQuestFromNPC(this))
 		return;
 
-	// Block new quest selection while a quest is already active
+	// Incomplete quest from this NPC — cancel it so the player can pick a new one
+	if (QM && QM->HasActiveQuestFrom(this))
+	{
+		QM->CancelActiveQuest();
+		return;
+	}
+
+	// Block new quest selection while a quest from a different NPC is active
 	if (QM && QM->HasActiveQuest()) return;
 
 	if (AvailableQuests.IsEmpty()) return;
@@ -52,7 +59,9 @@ void AQuestGiverNPC::Interact(APlayerCharacter* Player)
 
 	TArray<UQuestDefinition*> Quests;
 	for (TObjectPtr<UQuestDefinition>& Q : AvailableQuests)
-		if (Q) Quests.Add(Q);
+		if (Q && !QM->HasCompletedQuest(Q)) Quests.Add(Q);
+
+	if (Quests.IsEmpty()) return;
 
 	HUD->ShowQuestSelection(Player, Quests, this);
 }

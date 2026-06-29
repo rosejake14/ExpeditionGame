@@ -40,7 +40,10 @@ public:
 	// Returns true if the player had a completed quest from this NPC and rewards were granted
 	bool TryCompleteQuestFromNPC(AQuestGiverNPC* NPC);
 
+	void CancelActiveQuest();
+
 	bool HasActiveQuest() const { return ActiveQuest.Definition != nullptr; }
+	bool HasActiveQuestFrom(AQuestGiverNPC* NPC) const;
 	bool HasCompletedQuest(UQuestDefinition* Quest) const { return CompletedQuests.Contains(Quest); }
 	bool IsItemCollectedFor(UQuestDefinition* Quest) const;
 	UQuestDefinition* GetActiveQuestDefinition() const { return ActiveQuest.Definition; }
