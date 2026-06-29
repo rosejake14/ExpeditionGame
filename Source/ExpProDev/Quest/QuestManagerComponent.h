@@ -41,11 +41,15 @@ public:
 	bool TryCompleteQuestFromNPC(AQuestGiverNPC* NPC);
 
 	bool HasActiveQuest() const { return ActiveQuest.Definition != nullptr; }
+	bool HasCompletedQuest(UQuestDefinition* Quest) const { return CompletedQuests.Contains(Quest); }
 	bool IsItemCollectedFor(UQuestDefinition* Quest) const;
 	UQuestDefinition* GetActiveQuestDefinition() const { return ActiveQuest.Definition; }
 
 private:
 	FActiveQuestState ActiveQuest;
+
+	UPROPERTY()
+	TSet<TObjectPtr<UQuestDefinition>> CompletedQuests;
 
 	UPROPERTY()
 	TObjectPtr<class ADefaultPlayerController> PlayerController;
