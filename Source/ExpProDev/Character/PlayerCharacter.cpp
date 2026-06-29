@@ -26,6 +26,7 @@
 #include "Quest/QuestManagerComponent.h"
 #include "Interaction/Interactable.h"
 #include "Save/ExpProSaveGame.h"
+#include "Save/SaveGameSubsystem.h"
 #include "Extraction/ExtractionTypes.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -525,7 +526,10 @@ void APlayerCharacter::WipeSave()
 	if (UpgradeManager)
 		UpgradeManager->ClearUpgrades();
 
-	UGameplayStatics::DeleteGameInSlot(TEXT("PlayerSave"), 0);
+	FString SlotName = TEXT("SaveFile_0");
+	if (USaveGameSubsystem* Sub = GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
+		SlotName = Sub->GetActiveSlotName();
+	UGameplayStatics::DeleteGameInSlot(SlotName, 0);
 	UpdateHUDXP();
 	UE_LOG(LogTemp, Warning, TEXT("WipeSave: save deleted, all stats and upgrades reset."));
 }
@@ -560,15 +564,22 @@ void APlayerCharacter::SavePlayerData()
 	if (UpgradeManager)
 		Save->PurchasedUpgrades = UpgradeManager->GetAllPurchases();
 
-	UGameplayStatics::SaveGameToSlot(Save, TEXT("PlayerSave"), 0);
+	FString SlotName = TEXT("SaveFile_0");
+	if (USaveGameSubsystem* Sub = GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
+		SlotName = Sub->GetActiveSlotName();
+	UGameplayStatics::SaveGameToSlot(Save, SlotName, 0);
 }
 
 void APlayerCharacter::LoadPlayerData()
 {
-	if (!UGameplayStatics::DoesSaveGameExist(TEXT("PlayerSave"), 0)) return;
+	FString SlotName = TEXT("SaveFile_0");
+	if (USaveGameSubsystem* Sub = GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
+		SlotName = Sub->GetActiveSlotName();
+
+	if (!UGameplayStatics::DoesSaveGameExist(SlotName, 0)) return;
 
 	UExpProSaveGame* Save = Cast<UExpProSaveGame>(
-		UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSave"), 0));
+		UGameplayStatics::LoadGameFromSlot(SlotName, 0));
 	if (!Save) return;
 
 	XP       = Save->XP;

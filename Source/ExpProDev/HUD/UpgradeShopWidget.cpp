@@ -5,15 +5,20 @@
 #include "Upgrade/UpgradeDefinition.h"
 #include "Upgrade/UpgradeRegistry.h"
 #include "Save/ExpProSaveGame.h"
+#include "Save/SaveGameSubsystem.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
 
 void UUpgradeShopWidget::InitShop()
 {
+	FString SlotName = TEXT("SaveFile_0");
+	if (USaveGameSubsystem* Sub = GetWorld()->GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
+		SlotName = Sub->GetActiveSlotName();
+
 	// Load or create the save — shop works directly with the save file (no PlayerCharacter at main menu)
-	if (UGameplayStatics::DoesSaveGameExist(TEXT("PlayerSave"), 0))
-		CachedSave = Cast<UExpProSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSave"), 0));
+	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+		CachedSave = Cast<UExpProSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
 
 	if (!CachedSave)
 		CachedSave = Cast<UExpProSaveGame>(UGameplayStatics::CreateSaveGameObject(UExpProSaveGame::StaticClass()));
@@ -54,7 +59,10 @@ void UUpgradeShopWidget::HandleUpgradePurchase(UUpgradeDefinition* Def)
 	CachedSave->DOSCoins -= Cost;
 	CountRef++;
 
-	UGameplayStatics::SaveGameToSlot(CachedSave, TEXT("PlayerSave"), 0);
+	FString SlotName = TEXT("SaveFile_0");
+	if (USaveGameSubsystem* Sub = GetWorld()->GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
+		SlotName = Sub->GetActiveSlotName();
+	UGameplayStatics::SaveGameToSlot(CachedSave, SlotName, 0);
 	RefreshShop();
 }
 
