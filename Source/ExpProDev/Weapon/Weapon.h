@@ -32,6 +32,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "!Weapon Properties")
 	float BaseDamage = 20.f;
 
+	// When set, this weapon was spawned from a purchased (consumable) unit.
+	// On equip it decrements that weapon's saved quantity. NAME_None for level-placed weapons.
+	UPROPERTY(BlueprintReadWrite, Category = "!Weapon Properties")
+	FName ConsumeWeaponId = NAME_None;
+
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	class USoundBase* FireSound;
 

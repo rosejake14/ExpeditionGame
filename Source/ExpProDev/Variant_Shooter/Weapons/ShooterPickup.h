@@ -61,8 +61,8 @@ protected:
 	/** Timer to respawn the pickup */
 	FTimerHandle RespawnTimer;
 
-public:	
-	
+public:
+
 	/** Constructor */
 	AShooterPickup();
 

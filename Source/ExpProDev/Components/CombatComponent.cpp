@@ -10,6 +10,8 @@
 #include "DrawDebugHelpers.h"
 #include "PlayerController/DefaultPlayerController.h"
 #include "HUD/PlayerHUD.h"
+#include "Save/ExpProSaveGame.h"
+#include "Save/SaveGameSubsystem.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -191,9 +193,24 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 		HandSocket->AttachActor(EquippedWeapon, PlayerCharacter->GetMesh());
 	}
 
-	EquippedWeapon->SetOwner(PlayerCharacter); // This action is replicated already in this function. You can find this out by finding the declaration. 
+	EquippedWeapon->SetOwner(PlayerCharacter); // This action is replicated already in this function. You can find this out by finding the declaration.
 	EquippedWeapon->ShowPickupWidget(false);
 	EquippedWeapon->GetAreaSphere()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// Purchased (consumable) weapon: decrement its saved quantity now that it's been picked up
+	if (!EquippedWeapon->ConsumeWeaponId.IsNone())
+	{
+		if (UExpProSaveGame* Save = USaveGameSubsystem::LoadActiveSlot(this))
+		{
+			if (int32* Count = Save->PurchasedWeapons.Find(EquippedWeapon->ConsumeWeaponId))
+			{
+				if (--(*Count) <= 0)
+					Save->PurchasedWeapons.Remove(EquippedWeapon->ConsumeWeaponId);
+				USaveGameSubsystem::SaveToActiveSlot(this, Save);
+			}
+		}
+		EquippedWeapon->ConsumeWeaponId = NAME_None; // don't double-consume on weapon switching
+	}
 }
 
 void UCombatComponent::OnRep_EquippedWeapon()

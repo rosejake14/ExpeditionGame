@@ -22,4 +22,8 @@ public:
 
 	UPROPERTY()
 	TMap<FName, int32> PurchasedUpgrades;
+
+	// WeaponId -> quantity owned. Consumable: decremented when a weapon is picked up in the world.
+	UPROPERTY()
+	TMap<FName, int32> PurchasedWeapons;
 };
