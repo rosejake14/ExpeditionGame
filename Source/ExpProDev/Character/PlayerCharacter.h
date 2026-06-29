@@ -101,6 +101,9 @@ protected:
 
 	//	Blueprint Editable Variables
 
+	UPROPERTY(EditAnywhere, Category = "Audio")
+	class USoundBase* LevelUpSound;
+
 	// Player Health:
 	UPROPERTY(EditAnywhere, Category = PlayerStats)
 	float MaxHealth = 100.f;

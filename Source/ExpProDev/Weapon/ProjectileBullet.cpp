@@ -18,7 +18,10 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAc
             UGameplayStatics::ApplyDamage(OtherActor, ProjDamage, OwnerController, this, UDamageType::StaticClass());
         }
     }
-    
+
+    if (HitmarkerSound && OtherActor && OtherActor != GetOwner() && Cast<ACharacter>(OtherActor))
+        UGameplayStatics::PlaySound2D(this, HitmarkerSound);
+
     // Because we destroy the bullet, this Super:: should be called last, or none of the code below it will execute.
     Super::OnHit(HitComponent, OtherActor, OtherComp, NormalImpulse, HitResult);
 }

@@ -11,13 +11,13 @@ class EXPPRODEV_API UExpProSaveGame : public USaveGame
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	float XP = 0.f;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	int32 Level = 1;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	int32 DOSCoins = 0;
 
 	UPROPERTY()

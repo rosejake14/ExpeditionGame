@@ -5,6 +5,7 @@
 #include "Inventory/InventoryComponent.h"
 #include "Character/PlayerCharacter.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AItemPickup::AItemPickup()
 {
@@ -46,6 +47,8 @@ void AItemPickup::Interact(APlayerCharacter* Player)
 	UInventoryComponent* Inv = Player->GetInventory();
 	if (Inv && Inv->AddItem(ItemDef, Quantity))
 	{
+		if (PickupSound)
+			UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
 		Player->ClearPendingInteractableIfMatch(this);
 		Destroy();
 	}
@@ -61,7 +64,11 @@ void AItemPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 	{
 		UInventoryComponent* Inv = Player->GetInventory();
 		if (Inv && Inv->AddItem(ItemDef, Quantity))
+		{
+			if (PickupSound)
+				UGameplayStatics::PlaySoundAtLocation(this, PickupSound, GetActorLocation());
 			Destroy();
+		}
 	}
 	else
 	{

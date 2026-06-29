@@ -32,6 +32,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "!Weapon Properties")
 	float BaseDamage = 20.f;
 
+	UPROPERTY(EditAnywhere, Category = "Audio")
+	class USoundBase* FireSound;
+
 	// Textures for the weapon crosshairs:
 	UPROPERTY(EditAnywhere, Category = Crosshairs)
 	class UTexture2D* CrosshairCentre;

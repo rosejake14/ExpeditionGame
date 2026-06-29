@@ -125,6 +125,9 @@ void AWeapon::ShowPickupWidget(bool bShowWidget)
 
 void AWeapon::Fire(const FVector& HitTarget)
 {
+	if (FireSound)
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+
 	if (BaseDamage <= 0.f || !GetWorld()) return;
 
 	// Trace from weapon location to the confirmed hit point to find the target actor

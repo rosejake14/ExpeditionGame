@@ -20,6 +20,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup", meta = (ClampMin = 1))
 	int32 Quantity = 1;
 
+	UPROPERTY(EditAnywhere, Category = "Pickup")
+	class USoundBase* PickupSound;
+
 	UPROPERTY(EditAnywhere, Category = "Pickup|Animation")
 	float FloatAmplitude = 20.f;
 

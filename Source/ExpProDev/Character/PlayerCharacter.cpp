@@ -384,7 +384,11 @@ void APlayerCharacter::AddXP(float Amount)
 	UpdateHUDXP();
 
 	if (Level != OldLevel)
+	{
+		if (LevelUpSound)
+			UGameplayStatics::PlaySound2D(this, LevelUpSound);
 		SavePlayerData();
+	}
 }
 
 void APlayerCharacter::UpdateHUDXP()

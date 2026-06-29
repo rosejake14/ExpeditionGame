@@ -16,7 +16,11 @@ UCLASS()
 class EXPPRODEV_API AProjectileBullet : public AProjectile
 {
 	GENERATED_BODY()
-	
+
+public:
+	UPROPERTY(EditAnywhere, Category = "Audio")
+	class USoundBase* HitmarkerSound;
+
 protected:
 	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& HitResult) override;
 
