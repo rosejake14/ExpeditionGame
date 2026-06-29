@@ -10,6 +10,7 @@
 #include "InventoryScreenWidget.h"
 #include "QuestWidget.h"
 #include "QuestSelectionWidget.h"
+#include "SellSummaryWidget.h"
 #include "Character/PlayerCharacter.h"
 #include "Quest/QuestDefinition.h"
 
@@ -141,6 +142,27 @@ void APlayerHUD::AddQuestWidget()
 			QuestSelectionWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
+}
+
+void APlayerHUD::ShowSellSummary(const TArray<FSellEntry>& Entries, int32 TotalEarned, int32 NewBalance)
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC || !SellSummaryWidgetClass) return;
+
+	if (!SellSummaryWidget)
+	{
+		SellSummaryWidget = CreateWidget<USellSummaryWidget>(PC, SellSummaryWidgetClass);
+		if (SellSummaryWidget)
+			SellSummaryWidget->AddToViewport(10);
+	}
+
+	if (!SellSummaryWidget) return;
+
+	SellSummaryWidget->InitSummary(Entries, TotalEarned, NewBalance);
+	SellSummaryWidget->SetVisibility(ESlateVisibility::Visible);
+
+	PC->SetShowMouseCursor(true);
+	PC->SetInputMode(FInputModeUIOnly());
 }
 
 void APlayerHUD::ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests, AQuestGiverNPC* Giver)

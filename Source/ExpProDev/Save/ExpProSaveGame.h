@@ -16,4 +16,7 @@ public:
 
 	UPROPERTY()
 	int32 Level = 1;
+
+	UPROPERTY()
+	int32 DOSCoins = 0;
 };

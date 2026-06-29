@@ -20,10 +20,12 @@
 #include "TimerManager.h"
 #include "Inventory/InventoryComponent.h"
 #include "Inventory/ItemPickup.h"
+#include "Inventory/ItemDefinition.h"
 #include "HUD/PlayerHUD.h"
 #include "Quest/QuestManagerComponent.h"
 #include "Interaction/Interactable.h"
 #include "Save/ExpProSaveGame.h"
+#include "Extraction/ExtractionTypes.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -507,11 +509,12 @@ void APlayerCharacter::SprintButtonReleased(const FInputActionInstance& Instance
 
 void APlayerCharacter::WipeSave()
 {
-	XP    = 0.f;
-	Level = 1;
+	XP       = 0.f;
+	Level    = 1;
+	DOSCoins = 0;
 	UGameplayStatics::DeleteGameInSlot(TEXT("PlayerSave"), 0);
 	UpdateHUDXP();
-	UE_LOG(LogTemp, Warning, TEXT("WipeSave: save deleted, XP and Level reset."));
+	UE_LOG(LogTemp, Warning, TEXT("WipeSave: save deleted, XP, Level, and DOSCoins reset."));
 }
 
 void APlayerCharacter::SetLevel(int32 NewLevel)
@@ -530,8 +533,9 @@ void APlayerCharacter::SavePlayerData()
 		UGameplayStatics::CreateSaveGameObject(UExpProSaveGame::StaticClass()));
 	if (!Save) return;
 
-	Save->XP    = XP;
-	Save->Level = Level;
+	Save->XP       = XP;
+	Save->Level    = Level;
+	Save->DOSCoins = DOSCoins;
 
 	UGameplayStatics::SaveGameToSlot(Save, TEXT("PlayerSave"), 0);
 }
@@ -544,8 +548,60 @@ void APlayerCharacter::LoadPlayerData()
 		UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSave"), 0));
 	if (!Save) return;
 
-	XP    = Save->XP;
-	Level = Save->Level;
+	XP       = Save->XP;
+	Level    = Save->Level;
+	DOSCoins = Save->DOSCoins;
+}
+
+void APlayerCharacter::AddDOSCoins(int32 Amount)
+{
+	if (Amount <= 0) return;
+	DOSCoins += Amount;
+	SavePlayerData();
+}
+
+void APlayerCharacter::SellLoot()
+{
+	if (!Inventory) return;
+
+	TArray<FSellEntry> Entries;
+	int32 TotalEarned = 0;
+
+	// Build sell entries from all loot-type slots
+	for (int32 i = 0; i < Inventory->GetTotalSlotCount(); i++)
+	{
+		const FInventorySlot& Slot = Inventory->GetSlot(i);
+		if (Slot.IsEmpty() || !Slot.ItemDef) continue;
+		if (Slot.ItemDef->ItemType != EItemType::Loot) continue;
+
+		FSellEntry Entry;
+		Entry.Icon        = Slot.ItemDef->Icon;
+		Entry.Quantity    = Slot.Quantity;
+		Entry.CoinsEarned = FMath::RoundToInt(Slot.ItemDef->BaseValue) * Slot.Quantity;
+		TotalEarned      += Entry.CoinsEarned;
+		Entries.Add(Entry);
+	}
+
+	// Remove loot slots (reverse so indices stay valid)
+	for (int32 i = Inventory->GetTotalSlotCount() - 1; i >= 0; i--)
+	{
+		const FInventorySlot& Slot = Inventory->GetSlot(i);
+		if (!Slot.IsEmpty() && Slot.ItemDef && Slot.ItemDef->ItemType == EItemType::Loot)
+		{
+			Inventory->RemoveItem(i, Slot.Quantity);
+		}
+	}
+
+	AddDOSCoins(TotalEarned);
+
+	PlayerController = PlayerController == nullptr ? Cast<ADefaultPlayerController>(Controller) : PlayerController;
+	if (PlayerController)
+	{
+		if (APlayerHUD* HUD = Cast<APlayerHUD>(PlayerController->GetHUD()))
+		{
+			HUD->ShowSellSummary(Entries, TotalEarned, DOSCoins);
+		}
+	}
 }
 
 // Will only be called on the server.

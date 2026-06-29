@@ -127,6 +127,9 @@ void ADefaultPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
+	SetInputMode(FInputModeGameOnly());
+	SetShowMouseCursor(false);
+
 	APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(InPawn);
 	if (PlayerCharacter)
 	{

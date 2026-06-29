@@ -120,6 +120,10 @@ protected:
 	float XPPerLevel = 10.f;
 	void UpdateHUDXP();
 
+	// DOSCoin currency (persists across runs via save):
+	UPROPERTY(BlueprintReadOnly, Category = PlayerStats)
+	int32 DOSCoins = 0;
+
 	// Player Eliminated:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerStats)
 	bool bEliminated = false;
@@ -203,14 +207,23 @@ public:
 	// Adds XP towards the current level, rolling over and levelling up as needed.
 	// Public so quests / pickups / kill rewards can grant XP without depending on each other.
 	void AddXP(float Amount);
+	void AddDOSCoins(int32 Amount);
 
 	void SavePlayerData();
 	void LoadPlayerData();
+	void SellLoot();
 
 	UFUNCTION(Exec) void WipeSave();
 	UFUNCTION(Exec) void SetLevel(int32 NewLevel);
 
+	// Called by AExtractionZone on overlap — implement in BP_PlayerCharacter to show/hide prompt
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnEnteredExtractionZone();
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnExitedExtractionZone();
+
 	FORCEINLINE int32 GetLevel() const { return Level; }
 	FORCEINLINE float GetXP() const { return XP; }
 	FORCEINLINE float GetXPToNextLevel() const { return BaseXP + (Level - 1) * XPPerLevel; }
+	FORCEINLINE int32 GetDOSCoins() const { return DOSCoins; }
 };

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
+#include "Extraction/ExtractionTypes.h"
 #include "PlayerHUD.generated.h"
 
 class UInventoryComponent;
@@ -13,6 +14,7 @@ class UQuestSelectionWidget;
 class UQuestDefinition;
 class APlayerCharacter;
 class AQuestGiverNPC;
+class USellSummaryWidget;
 
 USTRUCT(BlueprintType)
 struct FHUDPackage
@@ -64,7 +66,13 @@ public:
 	UPROPERTY()
 	UQuestSelectionWidget* QuestSelectionWidget;
 
+	UPROPERTY(EditAnywhere, Category = "Extraction")
+	TSubclassOf<USellSummaryWidget> SellSummaryWidgetClass;
+	UPROPERTY()
+	USellSummaryWidget* SellSummaryWidget;
+
 	void ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests, AQuestGiverNPC* Giver);
+	void ShowSellSummary(const TArray<FSellEntry>& Entries, int32 TotalEarned, int32 NewBalance);
 
 protected:
 	virtual void BeginPlay() override;
