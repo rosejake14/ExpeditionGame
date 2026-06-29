@@ -19,4 +19,7 @@ public:
 
 	UPROPERTY()
 	int32 DOSCoins = 0;
+
+	UPROPERTY()
+	TMap<FName, int32> PurchasedUpgrades;
 };

@@ -6,6 +6,8 @@
 #include "Components/WidgetComponent.h"
 #include "Character/PlayerCharacter.h"
 #include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/DamageType.h"
 
 AWeapon::AWeapon()
 {
@@ -123,7 +125,24 @@ void AWeapon::ShowPickupWidget(bool bShowWidget)
 
 void AWeapon::Fire(const FVector& HitTarget)
 {
-	
+	if (BaseDamage <= 0.f || !GetWorld()) return;
+
+	// Trace from weapon location to the confirmed hit point to find the target actor
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	Params.AddIgnoredActor(GetOwner());
+
+	GetWorld()->LineTraceSingleByChannel(HitResult, GetActorLocation(), HitTarget, ECC_Visibility, Params);
+
+	AActor* HitActor = HitResult.GetActor();
+	if (!HitActor) return;
+
+	APlayerCharacter* OwnerPC  = Cast<APlayerCharacter>(GetOwner());
+	const float Multiplier     = OwnerPC ? OwnerPC->GetDamageMultiplier() : 1.0f;
+	AController* OwnerController = OwnerPC ? OwnerPC->GetController() : nullptr;
+
+	UGameplayStatics::ApplyDamage(HitActor, BaseDamage * Multiplier, OwnerController, this, UDamageType::StaticClass());
 }
 
 void AWeapon::Dropped()

@@ -21,6 +21,7 @@
 #include "Inventory/InventoryComponent.h"
 #include "Inventory/ItemPickup.h"
 #include "Inventory/ItemDefinition.h"
+#include "Upgrade/UpgradeManagerComponent.h"
 #include "HUD/PlayerHUD.h"
 #include "Quest/QuestManagerComponent.h"
 #include "Interaction/Interactable.h"
@@ -55,8 +56,9 @@ APlayerCharacter::APlayerCharacter()
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combat->SetIsReplicated(true);
 
-	Inventory    = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
-	QuestManager = CreateDefaultSubobject<UQuestManagerComponent>(TEXT("QuestManager"));
+	Inventory       = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
+	QuestManager    = CreateDefaultSubobject<UQuestManagerComponent>(TEXT("QuestManager"));
+	UpgradeManager  = CreateDefaultSubobject<UUpgradeManagerComponent>(TEXT("UpgradeManager"));
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
@@ -81,9 +83,9 @@ void APlayerCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	if (Combat)
-	{
 		Combat->PlayerCharacter = this;
-	}
+
+	BaseMaxHealth = MaxHealth;
 }
 
 void APlayerCharacter::BeginPlay()
@@ -512,9 +514,16 @@ void APlayerCharacter::WipeSave()
 	XP       = 0.f;
 	Level    = 1;
 	DOSCoins = 0;
+	DamageMultiplier = 1.0f;
+	MaxHealth = BaseMaxHealth;
+	Health    = MaxHealth;
+
+	if (UpgradeManager)
+		UpgradeManager->ClearUpgrades();
+
 	UGameplayStatics::DeleteGameInSlot(TEXT("PlayerSave"), 0);
 	UpdateHUDXP();
-	UE_LOG(LogTemp, Warning, TEXT("WipeSave: save deleted, XP, Level, and DOSCoins reset."));
+	UE_LOG(LogTemp, Warning, TEXT("WipeSave: save deleted, all stats and upgrades reset."));
 }
 
 void APlayerCharacter::SetLevel(int32 NewLevel)
@@ -527,15 +536,25 @@ void APlayerCharacter::SetLevel(int32 NewLevel)
 	UE_LOG(LogTemp, Warning, TEXT("SetLevel: player level set to %d."), NewLevel);
 }
 
+void APlayerCharacter::SetDOSCoins(int32 Amount)
+{
+	if (Amount < 0) return;
+	DOSCoins = Amount;
+	SavePlayerData();
+	UE_LOG(LogTemp, Warning, TEXT("SetDOSCoins: DOS$ set to %d."), Amount);
+}
+
 void APlayerCharacter::SavePlayerData()
 {
 	UExpProSaveGame* Save = Cast<UExpProSaveGame>(
 		UGameplayStatics::CreateSaveGameObject(UExpProSaveGame::StaticClass()));
 	if (!Save) return;
 
-	Save->XP       = XP;
-	Save->Level    = Level;
-	Save->DOSCoins = DOSCoins;
+	Save->XP               = XP;
+	Save->Level            = Level;
+	Save->DOSCoins         = DOSCoins;
+	if (UpgradeManager)
+		Save->PurchasedUpgrades = UpgradeManager->GetAllPurchases();
 
 	UGameplayStatics::SaveGameToSlot(Save, TEXT("PlayerSave"), 0);
 }
@@ -551,6 +570,14 @@ void APlayerCharacter::LoadPlayerData()
 	XP       = Save->XP;
 	Level    = Save->Level;
 	DOSCoins = Save->DOSCoins;
+
+	if (UpgradeManager)
+	{
+		UpgradeManager->LoadUpgrades(Save->PurchasedUpgrades);
+		MaxHealth        = BaseMaxHealth + UpgradeManager->GetHealthBonus();
+		Health           = MaxHealth;
+		DamageMultiplier = 1.0f + UpgradeManager->GetDamageMultiplierBonus();
+	}
 }
 
 void APlayerCharacter::AddDOSCoins(int32 Amount)

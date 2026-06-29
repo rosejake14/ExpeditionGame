@@ -29,6 +29,9 @@ public:
 	virtual void Fire(const FVector& HitTarget); // need to override in the projectile class
 	void Dropped();
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "!Weapon Properties")
+	float BaseDamage = 20.f;
+
 	// Textures for the weapon crosshairs:
 	UPROPERTY(EditAnywhere, Category = Crosshairs)
 	class UTexture2D* CrosshairCentre;

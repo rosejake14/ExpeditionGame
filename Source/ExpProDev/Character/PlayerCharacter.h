@@ -104,6 +104,9 @@ protected:
 	// Player Health:
 	UPROPERTY(EditAnywhere, Category = PlayerStats)
 	float MaxHealth = 100.f;
+
+	// Captured from MaxHealth in PostInitializeComponents — upgrades are added on top of this
+	float BaseMaxHealth = 100.f;
 	UPROPERTY(ReplicatedUsing = OnRep_Health, BlueprintReadWrite, EditAnywhere, Category = PlayerStats)
 	float Health = 100.f;
 	UFUNCTION()
@@ -123,6 +126,10 @@ protected:
 	// DOSCoin currency (persists across runs via save):
 	UPROPERTY(BlueprintReadOnly, Category = PlayerStats)
 	int32 DOSCoins = 0;
+
+	// Multiplier applied to all outgoing damage — set by UpgradeManagerComponent on load
+	UPROPERTY(BlueprintReadOnly, Category = PlayerStats)
+	float DamageMultiplier = 1.0f;
 
 	// Player Eliminated:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerStats)
@@ -162,6 +169,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	class UQuestManagerComponent* QuestManager;
+
+	UPROPERTY(VisibleAnywhere)
+	class UUpgradeManagerComponent* UpgradeManager;
 
 	UPROPERTY()
 	TObjectPtr<AActor> PendingInteractable;
@@ -215,6 +225,7 @@ public:
 
 	UFUNCTION(Exec) void WipeSave();
 	UFUNCTION(Exec) void SetLevel(int32 NewLevel);
+	UFUNCTION(Exec) void SetDOSCoins(int32 Amount);
 
 	// Called by AExtractionZone on overlap — implement in BP_PlayerCharacter to show/hide prompt
 	UFUNCTION(BlueprintImplementableEvent)
@@ -226,4 +237,5 @@ public:
 	FORCEINLINE float GetXP() const { return XP; }
 	FORCEINLINE float GetXPToNextLevel() const { return BaseXP + (Level - 1) * XPPerLevel; }
 	FORCEINLINE int32 GetDOSCoins() const { return DOSCoins; }
+	FORCEINLINE float GetDamageMultiplier() const { return DamageMultiplier; }
 };
