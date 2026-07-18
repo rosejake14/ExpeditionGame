@@ -26,8 +26,16 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ShowPickupWidget(bool bShowWidget);
-	virtual void Fire(const FVector& HitTarget); // need to override in the projectile class
+
+	// Plays shared fire cosmetics, then applies this weapon's impact (hitscan by default).
+	// Projectile weapons override Fire to spawn a projectile and skip the hitscan impact.
+	virtual void Fire(const FVector& HitTarget);
+
 	void Dropped();
+
+	// Final outgoing damage = BaseDamage scaled by the owning player's DamageMultiplier (upgrades).
+	// Shared so hitscan and projectile paths use one source of truth.
+	float GetOutgoingDamage() const;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "!Weapon Properties")
 	float BaseDamage = 20.f;
@@ -53,6 +61,10 @@ public:
 	UTexture2D* CrosshairLeft;
 protected:
 	virtual void BeginPlay() override;
+
+	// Traces from the muzzle to HitTarget and applies GetOutgoingDamage() to what it hits.
+	// Overridden to a no-op by projectile weapons so damage isn't dealt twice.
+	virtual void ApplyImpact(const FVector& HitTarget);
 
 	UFUNCTION()
 	virtual void OnSphereOverlap(

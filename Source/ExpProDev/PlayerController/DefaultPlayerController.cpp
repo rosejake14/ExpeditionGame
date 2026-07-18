@@ -22,47 +22,22 @@ void ADefaultPlayerController::SetHUDHealth(float Health, float MaxHealth)
 {
 	// Is it valid, if not, cast to playerHUD.
 	PlayerHUD = PlayerHUD == nullptr ? Cast<APlayerHUD>(GetHUD()) : PlayerHUD;
-	UE_LOG(LogTemp, Warning, TEXT("Attempting to set hud health"));
 
 	// Check in the order in which things are put together, checking the parent first, then the children.
 	bool bHUDValid = PlayerHUD &&
 		PlayerHUD->PlayerOverlay &&
 			PlayerHUD->PlayerOverlay->HealthBar &&
 				PlayerHUD->PlayerOverlay->HealthText;
-	
+
 	if (bHUDValid)
 	{
-		// Set Health Bar
-		const float HealthPercent = Health / MaxHealth;
+		// Set Health Bar (guard against divide-by-zero if MaxHealth is unset)
+		const float HealthPercent = MaxHealth > 0.f ? Health / MaxHealth : 0.f;
 		PlayerHUD->PlayerOverlay->HealthBar->SetPercent(HealthPercent);
 		// Set Health Text
 		FString HealthText = FString::Printf(TEXT("%d"), FMath::CeilToInt(Health));
 		PlayerHUD->PlayerOverlay->HealthText->SetText(FText::FromString(HealthText));
 	}
-	else
-	{
-		if (PlayerHUD != nullptr)
-		{
-			if (PlayerHUD->PlayerOverlay != nullptr)
-			{
-				if (PlayerHUD->PlayerOverlay->HealthText != nullptr || PlayerHUD->PlayerOverlay->HealthBar != nullptr)
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Health Bar/Text Valid"));
-				}else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Health Bar/Text InValid"));
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("HUD Overlay Invalid"));
-			}
-		}else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("HUD Invalid"));
-		}
-	}
-	
 }
 
 //

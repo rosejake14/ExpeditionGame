@@ -29,7 +29,16 @@ void ADefaultGameMode::RequestRespawn(class ACharacter* EliminatedCharacter, cla
 	{
 		TArray<AActor*> PlayerStartActors;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), PlayerStartActors);
-		int32 StartSelection = FMath::RandRange(0, PlayerStartActors.Num() - 1);
-		RestartPlayerAtPlayerStart(EliminatedController, PlayerStartActors[StartSelection]);
+		if (PlayerStartActors.Num() > 0)
+		{
+			const int32 StartSelection = FMath::RandRange(0, PlayerStartActors.Num() - 1);
+			RestartPlayerAtPlayerStart(EliminatedController, PlayerStartActors[StartSelection]);
+		}
+		else
+		{
+			// No PlayerStarts on this map — fall back to the default spawn transform so we don't crash.
+			UE_LOG(LogTemp, Warning, TEXT("RequestRespawn: no PlayerStart actors found; restarting at default transform."));
+			RestartPlayer(EliminatedController);
+		}
 	}
 }

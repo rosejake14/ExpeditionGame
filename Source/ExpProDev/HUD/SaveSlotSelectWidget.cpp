@@ -52,16 +52,15 @@ void USaveSlotSelectWidget::HandleSlotSelected(int32 SlotIndex)
 	const FString SlotName = USaveGameSubsystem::GetSlotName(SlotIndex);
 	const bool bIsNewSave = !UGameplayStatics::DoesSaveGameExist(SlotName, 0);
 
+	// Make this the active slot first so the save API resolves writes to it.
+	Sub->ActiveSlotIndex = SlotIndex;
+
 	if (bIsNewSave)
 	{
-		// Write a blank save to disk immediately so the slot shows as occupied on return.
-		UExpProSaveGame* NewSave = Cast<UExpProSaveGame>(
-			UGameplayStatics::CreateSaveGameObject(UExpProSaveGame::StaticClass()));
-		if (NewSave)
-			UGameplayStatics::SaveGameToSlot(NewSave, SlotName, 0);
+		// Write a blank (current-version) save to disk immediately so the slot shows as occupied on return.
+		USaveGameSubsystem::MutateActiveSlot(this, [](UExpProSaveGame&){});
 	}
 
-	Sub->ActiveSlotIndex = SlotIndex;
 	OnSlotSelected(SlotIndex, bIsNewSave);
 }
 

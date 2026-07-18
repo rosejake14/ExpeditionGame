@@ -46,10 +46,19 @@ void UWeaponShopWidget::HandleWeaponPurchase(UWeaponDefinition* Def)
 	if (!Def || !CachedSave) return;
 	if (CachedSave->DOSCoins < Def->Cost) return;
 
-	CachedSave->DOSCoins -= Def->Cost;
-	CachedSave->PurchasedWeapons.FindOrAdd(Def->WeaponId)++;
+	// Persist through the subsystem so PurchasedUpgrades / other fields survive the write.
+	const FName WeaponId = Def->WeaponId;
+	const int32 Cost = Def->Cost;
+	USaveGameSubsystem::MutateActiveSlot(this, [WeaponId, Cost](UExpProSaveGame& Save)
+	{
+		Save.DOSCoins -= Cost;
+		Save.PurchasedWeapons.FindOrAdd(WeaponId)++;
+	});
 
-	USaveGameSubsystem::SaveToActiveSlot(this, CachedSave);
+	// Keep the cached view in sync with what was just persisted.
+	CachedSave->DOSCoins -= Cost;
+	CachedSave->PurchasedWeapons.FindOrAdd(WeaponId)++;
+
 	RefreshShop();
 }
 

@@ -22,4 +22,8 @@ private:
 	TSubclassOf<class AProjectile> ProjectileClass;
 public:
 	virtual void Fire(const FVector& HitTarget) override;
+
+protected:
+	// No-op: projectile weapons deal damage through the spawned projectile, not a hitscan trace.
+	virtual void ApplyImpact(const FVector& HitTarget) override {}
 };

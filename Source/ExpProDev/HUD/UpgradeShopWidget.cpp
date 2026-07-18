@@ -12,14 +12,8 @@
 
 void UUpgradeShopWidget::InitShop()
 {
-	FString SlotName = TEXT("SaveFile_0");
-	if (USaveGameSubsystem* Sub = GetWorld()->GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
-		SlotName = Sub->GetActiveSlotName();
-
 	// Load or create the save — shop works directly with the save file (no PlayerCharacter at main menu)
-	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
-		CachedSave = Cast<UExpProSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
-
+	CachedSave = USaveGameSubsystem::LoadActiveSlot(this);
 	if (!CachedSave)
 		CachedSave = Cast<UExpProSaveGame>(UGameplayStatics::CreateSaveGameObject(UExpProSaveGame::StaticClass()));
 
@@ -56,13 +50,18 @@ void UUpgradeShopWidget::HandleUpgradePurchase(UUpgradeDefinition* Def)
 
 	if (Def->IsMaxed(CountRef) || CachedSave->DOSCoins < Cost) return;
 
+	// Persist through the subsystem so PurchasedWeapons / other fields survive the write.
+	const FName UpgradeId = Def->UpgradeId;
+	USaveGameSubsystem::MutateActiveSlot(this, [UpgradeId, Cost](UExpProSaveGame& Save)
+	{
+		Save.DOSCoins -= Cost;
+		Save.PurchasedUpgrades.FindOrAdd(UpgradeId)++;
+	});
+
+	// Keep the cached view in sync with what was just persisted.
 	CachedSave->DOSCoins -= Cost;
 	CountRef++;
 
-	FString SlotName = TEXT("SaveFile_0");
-	if (USaveGameSubsystem* Sub = GetWorld()->GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
-		SlotName = Sub->GetActiveSlotName();
-	UGameplayStatics::SaveGameToSlot(CachedSave, SlotName, 0);
 	RefreshShop();
 }
 

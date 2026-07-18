@@ -7,7 +7,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Weapon/Weapon.h"
-#include "DrawDebugHelpers.h"
 #include "PlayerController/DefaultPlayerController.h"
 #include "HUD/PlayerHUD.h"
 #include "Save/ExpProSaveGame.h"
@@ -24,7 +23,8 @@ UCombatComponent::UCombatComponent()
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	PlayerController = Cast<ADefaultPlayerController>(PlayerCharacter->Controller);
+	if (PlayerCharacter)
+		PlayerController = Cast<ADefaultPlayerController>(PlayerCharacter->Controller);
 
 	// Fixed issue where the combat wasn't ticking.
 	PrimaryComponentTick.Target = this;
@@ -91,7 +91,7 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 
 void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 {
-	FVector2D ViewportSize;
+	FVector2D ViewportSize = FVector2D::ZeroVector;
 	if (GEngine && GEngine->GameViewport)
 	{
 		GEngine->GameViewport->GetViewportSize(ViewportSize);
@@ -117,23 +117,12 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 			TraceHitResult,
 			Start,
 			End,
-			ECC_MAX
+			ECC_Visibility
 		);
 
 		if (!TraceHitResult.bBlockingHit)
 		{
 			TraceHitResult.ImpactPoint = End;
-		}
-		else
-		{
-			DrawDebugSphere(
-				GetWorld(),
-				TraceHitResult.ImpactPoint,
-				10.f,
-				10.f,
-				FColor::Red,
-				false
-			);
 		}
 	}
 }
@@ -200,15 +189,15 @@ void UCombatComponent::EquipWeapon(class AWeapon* WeaponToEquip)
 	// Purchased (consumable) weapon: decrement its saved quantity now that it's been picked up
 	if (!EquippedWeapon->ConsumeWeaponId.IsNone())
 	{
-		if (UExpProSaveGame* Save = USaveGameSubsystem::LoadActiveSlot(this))
+		const FName ConsumeId = EquippedWeapon->ConsumeWeaponId;
+		USaveGameSubsystem::MutateActiveSlot(this, [ConsumeId](UExpProSaveGame& Save)
 		{
-			if (int32* Count = Save->PurchasedWeapons.Find(EquippedWeapon->ConsumeWeaponId))
+			if (int32* Count = Save.PurchasedWeapons.Find(ConsumeId))
 			{
 				if (--(*Count) <= 0)
-					Save->PurchasedWeapons.Remove(EquippedWeapon->ConsumeWeaponId);
-				USaveGameSubsystem::SaveToActiveSlot(this, Save);
+					Save.PurchasedWeapons.Remove(ConsumeId);
 			}
-		}
+		});
 		EquippedWeapon->ConsumeWeaponId = NAME_None; // don't double-consume on weapon switching
 	}
 }

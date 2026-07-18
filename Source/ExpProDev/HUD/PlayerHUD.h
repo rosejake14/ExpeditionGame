@@ -22,11 +22,17 @@ struct FHUDPackage
 	GENERATED_BODY()
 
 public:
-	class UTexture2D* CrosshairCentre;
-	UTexture2D* CrosshairTop;
-	UTexture2D* CrosshairBottom;
-	UTexture2D* CrosshairRight;
-	UTexture2D* CrosshairLeft;
+	// UPROPERTY so the crosshair textures are GC-tracked while held in the package.
+	UPROPERTY()
+	class UTexture2D* CrosshairCentre = nullptr;
+	UPROPERTY()
+	UTexture2D* CrosshairTop = nullptr;
+	UPROPERTY()
+	UTexture2D* CrosshairBottom = nullptr;
+	UPROPERTY()
+	UTexture2D* CrosshairRight = nullptr;
+	UPROPERTY()
+	UTexture2D* CrosshairLeft = nullptr;
 };
 
 

@@ -44,8 +44,12 @@ protected:
 	void OnRep_EquippedWeapon();
 
 private:
+	// UPROPERTY so these back-references are GC-tracked (nulled on destroy rather than dangling).
+	UPROPERTY()
 	class APlayerCharacter* PlayerCharacter;
+	UPROPERTY()
 	class ADefaultPlayerController* PlayerController;
+	UPROPERTY()
 	class APlayerHUD* PlayerHUD;
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)

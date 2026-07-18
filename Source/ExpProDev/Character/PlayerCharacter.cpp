@@ -526,10 +526,8 @@ void APlayerCharacter::WipeSave()
 	if (UpgradeManager)
 		UpgradeManager->ClearUpgrades();
 
-	FString SlotName = TEXT("SaveFile_0");
 	if (USaveGameSubsystem* Sub = GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
-		SlotName = Sub->GetActiveSlotName();
-	UGameplayStatics::DeleteGameInSlot(SlotName, 0);
+		UGameplayStatics::DeleteGameInSlot(Sub->GetActiveSlotName(), 0);
 	UpdateHUDXP();
 	UE_LOG(LogTemp, Warning, TEXT("WipeSave: save deleted, all stats and upgrades reset."));
 }
@@ -554,32 +552,21 @@ void APlayerCharacter::SetDOSCoins(int32 Amount)
 
 void APlayerCharacter::SavePlayerData()
 {
-	UExpProSaveGame* Save = Cast<UExpProSaveGame>(
-		UGameplayStatics::CreateSaveGameObject(UExpProSaveGame::StaticClass()));
-	if (!Save) return;
-
-	Save->XP               = XP;
-	Save->Level            = Level;
-	Save->DOSCoins         = DOSCoins;
-	if (UpgradeManager)
-		Save->PurchasedUpgrades = UpgradeManager->GetAllPurchases();
-
-	FString SlotName = TEXT("SaveFile_0");
-	if (USaveGameSubsystem* Sub = GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
-		SlotName = Sub->GetActiveSlotName();
-	UGameplayStatics::SaveGameToSlot(Save, SlotName, 0);
+	// Read-modify-write through the subsystem: fields we don't touch here (e.g. PurchasedWeapons)
+	// are preserved, so saving XP/coins can never wipe shop purchases.
+	USaveGameSubsystem::MutateActiveSlot(this, [this](UExpProSaveGame& Save)
+	{
+		Save.XP       = XP;
+		Save.Level    = Level;
+		Save.DOSCoins = DOSCoins;
+		if (UpgradeManager)
+			Save.PurchasedUpgrades = UpgradeManager->GetAllPurchases();
+	});
 }
 
 void APlayerCharacter::LoadPlayerData()
 {
-	FString SlotName = TEXT("SaveFile_0");
-	if (USaveGameSubsystem* Sub = GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
-		SlotName = Sub->GetActiveSlotName();
-
-	if (!UGameplayStatics::DoesSaveGameExist(SlotName, 0)) return;
-
-	UExpProSaveGame* Save = Cast<UExpProSaveGame>(
-		UGameplayStatics::LoadGameFromSlot(SlotName, 0));
+	UExpProSaveGame* Save = USaveGameSubsystem::LoadActiveSlot(this);
 	if (!Save) return;
 
 	XP       = Save->XP;

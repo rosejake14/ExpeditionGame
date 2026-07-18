@@ -123,11 +123,23 @@ void AWeapon::ShowPickupWidget(bool bShowWidget)
 	}
 }
 
+float AWeapon::GetOutgoingDamage() const
+{
+	const APlayerCharacter* OwnerPC = Cast<APlayerCharacter>(GetOwner());
+	const float Multiplier = OwnerPC ? OwnerPC->GetDamageMultiplier() : 1.0f;
+	return BaseDamage * Multiplier;
+}
+
 void AWeapon::Fire(const FVector& HitTarget)
 {
 	if (FireSound)
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 
+	ApplyImpact(HitTarget);
+}
+
+void AWeapon::ApplyImpact(const FVector& HitTarget)
+{
 	if (BaseDamage <= 0.f || !GetWorld()) return;
 
 	// Trace from weapon location to the confirmed hit point to find the target actor
@@ -141,11 +153,10 @@ void AWeapon::Fire(const FVector& HitTarget)
 	AActor* HitActor = HitResult.GetActor();
 	if (!HitActor) return;
 
-	APlayerCharacter* OwnerPC  = Cast<APlayerCharacter>(GetOwner());
-	const float Multiplier     = OwnerPC ? OwnerPC->GetDamageMultiplier() : 1.0f;
+	const APlayerCharacter* OwnerPC = Cast<APlayerCharacter>(GetOwner());
 	AController* OwnerController = OwnerPC ? OwnerPC->GetController() : nullptr;
 
-	UGameplayStatics::ApplyDamage(HitActor, BaseDamage * Multiplier, OwnerController, this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(HitActor, GetOutgoingDamage(), OwnerController, this, UDamageType::StaticClass());
 }
 
 void AWeapon::Dropped()
