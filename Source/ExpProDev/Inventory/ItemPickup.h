@@ -34,6 +34,11 @@ public:
 
 	virtual void Interact(APlayerCharacter* Player) override;
 
+	// Traces straight down onto the world floor (ECC_WorldStatic) near 'Around' and returns a point
+	// resting on that surface, so dropped loot never spawns buried under the map. Falls back to
+	// 'Around' unchanged if no floor is found. Mirrors the extraction-zone weapon placement.
+	static FVector GroundedLocation(const UWorld* World, const FVector& Around, const AActor* IgnoreActor = nullptr);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;

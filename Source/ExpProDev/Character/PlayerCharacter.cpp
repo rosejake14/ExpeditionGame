@@ -455,8 +455,60 @@ void APlayerCharacter::Eliminated()
 	{
 		Combat->EquippedWeapon->Dropped();
 	}
+	// Mark eliminated + disable collision FIRST, so the pickups we spawn next don't overlap this
+	// dying pawn and get grabbed straight back during the respawn delay.
 	MulticastEliminated();
+	// Scatter everything the player was carrying at the death location before they respawn.
+	DropAllItemsOnDeath();
 	GetWorldTimerManager().SetTimer(EliminatedTimer, this, &APlayerCharacter::EliminatedTimerFinished, EliminatedDelay);
+}
+
+void APlayerCharacter::DropAllItemsOnDeath()
+{
+	if (!Inventory) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	const FVector Origin = GetActorLocation();
+
+	for (int32 i = 0; i < Inventory->GetTotalSlotCount(); ++i)
+	{
+		const FInventorySlot& Slot = Inventory->GetSlot(i);
+		if (Slot.IsEmpty() || !Slot.ItemDef) continue;
+
+		TSubclassOf<AItemPickup> PickupClass =
+			Slot.ItemDef->PickupClass ? Slot.ItemDef->PickupClass : DefaultDropPickupClass;
+		if (!PickupClass)
+		{
+			// No pickup class configured — leave the item in the inventory rather than destroying it.
+			UE_LOG(LogTemp, Warning,
+				TEXT("DropAllItemsOnDeath: '%s' has no PickupClass and no DefaultDropPickupClass fallback — not dropped."),
+				*Slot.ItemDef->GetName());
+			continue;
+		}
+
+		// Random point within the scatter radius, then dropped onto the floor beneath it.
+		const float Angle = FMath::FRandRange(0.f, 2.f * PI);
+		const float Dist  = FMath::FRandRange(0.f, DeathDropScatterRadius);
+		const FVector Near = Origin + FVector(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 0.f);
+		const FVector SpawnLocation = AItemPickup::GroundedLocation(World, Near, this);
+
+		FActorSpawnParameters SpawnParams;
+		// AlwaysSpawn (not AdjustIfPossible) so clustered drops land exactly on the traced floor
+		// point instead of being shoved upward to resolve overlap with each other.
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		if (AItemPickup* Pickup = World->SpawnActor<AItemPickup>(
+			PickupClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams))
+		{
+			Pickup->ItemDef  = Slot.ItemDef;
+			Pickup->Quantity = Slot.Quantity;
+
+			// Only clear the slot once its pickup is safely in the world.
+			Inventory->RemoveItem(i, Slot.Quantity);
+		}
+	}
 }
 
 void APlayerCharacter::MulticastEliminated_Implementation()

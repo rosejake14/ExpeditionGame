@@ -146,6 +146,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = PlayerStats)
 	float EliminatedDelay = 2.f;
 
+	// ── Death drops ───────────────────────────────────────────────────────
+	// Radius (uu) around the death spot that carried items are scattered within.
+	UPROPERTY(EditDefaultsOnly, Category = "Death")
+	float DeathDropScatterRadius = 300.f;
+
+	// Fallback pickup actor for items whose UItemDefinition has no PickupClass set.
+	UPROPERTY(EditDefaultsOnly, Category = "Death")
+	TSubclassOf<class AItemPickup> DefaultDropPickupClass;
+
+	// Spawns every carried inventory item as a scattered pickup, then empties the inventory.
+	void DropAllItemsOnDeath();
+
 
 private:
 	// Player Character Components

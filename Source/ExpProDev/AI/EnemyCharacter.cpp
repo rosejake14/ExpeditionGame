@@ -95,22 +95,31 @@ void AEnemyCharacter::UpdateHealthBar()
 
 void AEnemyCharacter::DropLoot()
 {
-	FVector DropLocation = GetActorLocation();
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	const FVector Origin = GetActorLocation();
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	float Offset = 0.f;
 	for (const FLootEntry& Entry : LootTable.Entries)
 	{
 		if (!Entry.Item || !Entry.PickupActorClass) continue;
 		if (FMath::FRand() > Entry.DropChance) continue;
 
 		const int32 Qty = FMath::RandRange(Entry.MinQuantity, Entry.MaxQuantity);
-		if (AItemPickup* Pickup = GetWorld()->SpawnActor<AItemPickup>(
-			Entry.PickupActorClass, DropLocation, FRotator::ZeroRotator, Params))
+
+		// Spread drops out a little, then drop each onto the floor beneath it.
+		const FVector Near = Origin + FVector(Offset, 0.f, 0.f);
+		const FVector SpawnLocation = AItemPickup::GroundedLocation(World, Near, this);
+		Offset += 50.f;
+
+		if (AItemPickup* Pickup = World->SpawnActor<AItemPickup>(
+			Entry.PickupActorClass, SpawnLocation, FRotator::ZeroRotator, Params))
 		{
 			Pickup->ItemDef = Entry.Item;
 			Pickup->Quantity = Qty;
-			DropLocation.X += 50.f;
 		}
 	}
 }

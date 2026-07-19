@@ -44,4 +44,9 @@ public:
 	// Only used when ItemType == Weapon
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
 	TSubclassOf<class AWeapon> WeaponClass;
+
+	// Pickup actor spawned when this item is dropped (e.g. on player death). Its mesh/visuals are
+	// configured on the BP. If left unset, the dropper falls back to its own default pickup class.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	TSubclassOf<class AItemPickup> PickupClass;
 };

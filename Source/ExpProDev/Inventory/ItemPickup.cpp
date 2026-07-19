@@ -41,9 +41,34 @@ void AItemPickup::Tick(float DeltaTime)
 	AddActorWorldRotation(FRotator(0.f, RotationSpeed * DeltaTime, 0.f));
 }
 
+FVector AItemPickup::GroundedLocation(const UWorld* World, const FVector& Around, const AActor* IgnoreActor)
+{
+	if (!World) return Around;
+
+	// Trace from well above to well below the point so we always cross the floor, even on slopes
+	// or when 'Around' starts slightly inside geometry.
+	const float TraceHeight = 2000.f;
+
+	FHitResult Hit;
+	FCollisionQueryParams QueryParams;
+	if (IgnoreActor) QueryParams.AddIgnoredActor(IgnoreActor);
+
+	if (World->LineTraceSingleByChannel(Hit,
+		Around + FVector(0.f, 0.f, TraceHeight),
+		Around - FVector(0.f, 0.f, TraceHeight),
+		ECC_WorldStatic, QueryParams))
+	{
+		// Lift slightly so the pickup rests on the surface rather than half-buried.
+		return Hit.ImpactPoint + FVector(0.f, 0.f, 100.f);
+	}
+
+	return Around;
+}
+
 void AItemPickup::Interact(APlayerCharacter* Player)
 {
 	if (!Player || !ItemDef) return;
+	if (Player->IsElimmed()) return; // dead players can't loot
 	UInventoryComponent* Inv = Player->GetInventory();
 	if (Inv && Inv->AddItem(ItemDef, Quantity))
 	{
@@ -59,6 +84,7 @@ void AItemPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 {
 	APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor);
 	if (!Player || !ItemDef) return;
+	if (Player->IsElimmed()) return; // dead players can't loot
 
 	if (ItemDef->bAutoPickup)
 	{
