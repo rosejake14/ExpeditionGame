@@ -67,5 +67,13 @@ void USaveSlotSelectWidget::HandleSlotSelected(int32 SlotIndex)
 void USaveSlotSelectWidget::HandleSlotDeleted(int32 SlotIndex)
 {
 	UGameplayStatics::DeleteGameInSlot(USaveGameSubsystem::GetSlotName(SlotIndex), 0);
+
+	// If the deleted slot is the cached active one, drop the cache so a queued flush can't recreate it.
+	if (USaveGameSubsystem* Sub = GetWorld()->GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
+	{
+		if (Sub->ActiveSlotIndex == SlotIndex)
+			USaveGameSubsystem::DiscardCache(this);
+	}
+
 	RefreshSlots();
 }

@@ -16,4 +16,7 @@ class EXPPRODEV_API UUpgradeRegistry : public UDataAsset
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Upgrade")
 	TArray<class UUpgradeDefinition*> Upgrades;
+
+	// Convenience: find a definition by its save key (mirrors UWeaponRegistry::FindById).
+	class UUpgradeDefinition* FindById(FName UpgradeId) const;
 };

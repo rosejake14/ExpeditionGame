@@ -30,6 +30,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
 	float Health = 100.f;
 
+	// Floating health bar above the enemy. Set its Widget Class to WBP_EnemyHealthBar in the enemy BP.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|UI")
+	class UWidgetComponent* HealthBarWidget;
+
 	// ── Rewards ───────────────────────────────────────────────────────────
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Rewards")
 	float XPReward = 25.f;
@@ -71,4 +75,7 @@ public:
 
 private:
 	void DropLoot();
+
+	// Pushes Health/MaxHealth into the floating bar widget.
+	void UpdateHealthBar();
 };

@@ -3,16 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "HUD/ShopWidgetBase.h"
 #include "WeaponShopWidget.generated.h"
 
 class UWeaponRegistry;
-class UWeaponDefinition;
-class UWeaponSlotWidget;
-class UExpProSaveGame;
 
+// Thin view over UShopWidgetBase: builds rows from the weapon registry and routes purchases
+// to UEconomySubsystem. All balance/save handling lives in the base + subsystem.
 UCLASS()
-class EXPPRODEV_API UWeaponShopWidget : public UUserWidget
+class EXPPRODEV_API UWeaponShopWidget : public UShopWidgetBase
 {
 	GENERATED_BODY()
 public:
@@ -20,23 +19,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	UWeaponRegistry* Registry;
 
-	// Set to WBP_WeaponSlot in WBP_WeaponShop class defaults
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
-	TSubclassOf<UWeaponSlotWidget> SlotWidgetClass;
-
-	// Call this from your main menu Blueprint when the screen opens
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void InitShop();
-
 protected:
-	UPROPERTY(meta = (BindWidget)) class UScrollBox* WeaponListContainer;
-	UPROPERTY(meta = (BindWidget)) class UTextBlock* BalanceText;
-
-private:
-	UPROPERTY() UExpProSaveGame* CachedSave = nullptr;
-	UPROPERTY() TArray<UWeaponSlotWidget*> SlotWidgets;
-
-	void RefreshShop();
-
-	UFUNCTION() void HandleWeaponPurchase(UWeaponDefinition* Def);
+	virtual TArray<FShopEntry> BuildEntries() const override;
+	virtual void PurchaseEntry(FName Id) override;
 };

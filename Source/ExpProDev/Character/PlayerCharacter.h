@@ -75,6 +75,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Flush any deferred save state synchronously on quit / level change.
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	// Called when possed, parsing issues when clients connecting too early - before BeingPlay(), meaning they had no controller
 	virtual void PossessedBy(AController* NewController) override;
 
@@ -220,9 +223,14 @@ public:
 	// Adds XP towards the current level, rolling over and levelling up as needed.
 	// Public so quests / pickups / kill rewards can grant XP without depending on each other.
 	void AddXP(float Amount);
+
+	// Grants DOS$ (e.g. coin pickups). BlueprintCallable so pickup BPs can award currency.
+	UFUNCTION(BlueprintCallable, Category = "PlayerStats")
 	void AddDOSCoins(int32 Amount);
 
-	void SavePlayerData();
+	// bDeferred routes high-frequency writes (coin/XP tick) through the coalescing save path;
+	// checkpoints (level-up, sell, etc.) leave it false so they flush immediately.
+	void SavePlayerData(bool bDeferred = false);
 	void LoadPlayerData();
 	void SellLoot();
 

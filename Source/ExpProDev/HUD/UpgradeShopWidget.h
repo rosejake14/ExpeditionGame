@@ -3,16 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "HUD/ShopWidgetBase.h"
 #include "UpgradeShopWidget.generated.h"
 
 class UUpgradeRegistry;
-class UUpgradeDefinition;
-class UUpgradeSlotWidget;
-class UExpProSaveGame;
 
+// Thin view over UShopWidgetBase: builds rows from the upgrade registry and routes purchases
+// to UEconomySubsystem. All balance/save handling lives in the base + subsystem.
 UCLASS()
-class EXPPRODEV_API UUpgradeShopWidget : public UUserWidget
+class EXPPRODEV_API UUpgradeShopWidget : public UShopWidgetBase
 {
 	GENERATED_BODY()
 public:
@@ -20,23 +19,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Upgrade")
 	UUpgradeRegistry* Registry;
 
-	// Set to WBP_UpgradeSlot in WBP_UpgradeShop class defaults
-	UPROPERTY(EditDefaultsOnly, Category = "Upgrade")
-	TSubclassOf<UUpgradeSlotWidget> SlotWidgetClass;
-
-	// Call this from your main menu Blueprint on BeginPlay (or when the screen opens)
-	UFUNCTION(BlueprintCallable, Category = "Upgrade")
-	void InitShop();
-
 protected:
-	UPROPERTY(meta = (BindWidget)) class UScrollBox* UpgradeListContainer;
-	UPROPERTY(meta = (BindWidget)) class UTextBlock* BalanceText;
-
-private:
-	UPROPERTY() UExpProSaveGame* CachedSave = nullptr;
-	UPROPERTY() TArray<UUpgradeSlotWidget*> SlotWidgets;
-
-	void RefreshShop();
-
-	UFUNCTION() void HandleUpgradePurchase(UUpgradeDefinition* Def);
+	virtual TArray<FShopEntry> BuildEntries() const override;
+	virtual void PurchaseEntry(FName Id) override;
 };

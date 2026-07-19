@@ -27,6 +27,7 @@
 #include "Interaction/Interactable.h"
 #include "Save/ExpProSaveGame.h"
 #include "Save/SaveGameSubsystem.h"
+#include "Economy/EconomySubsystem.h"
 #include "Extraction/ExtractionTypes.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -117,6 +118,14 @@ void APlayerCharacter::BeginPlay()
 			}
 		}
 	}
+}
+
+void APlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Force any deferred (coalesced) save state to disk before we tear down — an async flush
+	// scheduled on the timer could otherwise be dropped when the game exits.
+	USaveGameSubsystem::FlushNow(this);
+	Super::EndPlay(EndPlayReason);
 }
 
 // Required for Listen Servers.
@@ -384,12 +393,12 @@ void APlayerCharacter::AddXP(float Amount)
 
 	UpdateHUDXP();
 
-	if (Level != OldLevel)
-	{
-		if (LevelUpSound)
-			UGameplayStatics::PlaySound2D(this, LevelUpSound);
-		SavePlayerData();
-	}
+	const bool bLeveledUp = (Level != OldLevel);
+	if (bLeveledUp && LevelUpSound)
+		UGameplayStatics::PlaySound2D(this, LevelUpSound);
+
+	// Level-up is a checkpoint (flush now); a plain XP tick is deferred (coalesced).
+	SavePlayerData(/*bDeferred*/ !bLeveledUp);
 }
 
 void APlayerCharacter::UpdateHUDXP()
@@ -528,6 +537,8 @@ void APlayerCharacter::WipeSave()
 
 	if (USaveGameSubsystem* Sub = GetGameInstance()->GetSubsystem<USaveGameSubsystem>())
 		UGameplayStatics::DeleteGameInSlot(Sub->GetActiveSlotName(), 0);
+	// Drop the in-memory cache too, or a queued flush would re-create the file we just deleted.
+	USaveGameSubsystem::DiscardCache(this);
 	UpdateHUDXP();
 	UE_LOG(LogTemp, Warning, TEXT("WipeSave: save deleted, all stats and upgrades reset."));
 }
@@ -550,10 +561,11 @@ void APlayerCharacter::SetDOSCoins(int32 Amount)
 	UE_LOG(LogTemp, Warning, TEXT("SetDOSCoins: DOS$ set to %d."), Amount);
 }
 
-void APlayerCharacter::SavePlayerData()
+void APlayerCharacter::SavePlayerData(bool bDeferred)
 {
 	// Read-modify-write through the subsystem: fields we don't touch here (e.g. PurchasedWeapons)
-	// are preserved, so saving XP/coins can never wipe shop purchases.
+	// are preserved, so saving XP/coins can never wipe shop purchases. Deferred writes (coin/XP
+	// ticks) are coalesced by the subsystem; checkpoints flush immediately.
 	USaveGameSubsystem::MutateActiveSlot(this, [this](UExpProSaveGame& Save)
 	{
 		Save.XP       = XP;
@@ -561,7 +573,7 @@ void APlayerCharacter::SavePlayerData()
 		Save.DOSCoins = DOSCoins;
 		if (UpgradeManager)
 			Save.PurchasedUpgrades = UpgradeManager->GetAllPurchases();
-	});
+	}, bDeferred ? ESaveFlushPolicy::Deferred : ESaveFlushPolicy::Checkpoint);
 }
 
 void APlayerCharacter::LoadPlayerData()
@@ -586,49 +598,30 @@ void APlayerCharacter::AddDOSCoins(int32 Amount)
 {
 	if (Amount <= 0) return;
 	DOSCoins += Amount;
-	SavePlayerData();
+	// High-frequency (coin pickups) — coalesce the write instead of hitching per coin.
+	SavePlayerData(/*bDeferred*/ true);
 }
 
 void APlayerCharacter::SellLoot()
 {
 	if (!Inventory) return;
 
-	TArray<FSellEntry> Entries;
-	int32 TotalEarned = 0;
+	// Valuation, inventory removal and coin credit all live in the economy subsystem now;
+	// the pawn just kicks it off and drives the HUD from the returned totals.
+	UEconomySubsystem* Economy = UEconomySubsystem::Get(this);
+	if (!Economy) return;
 
-	// Build sell entries from all loot-type slots
-	for (int32 i = 0; i < Inventory->GetTotalSlotCount(); i++)
-	{
-		const FInventorySlot& Slot = Inventory->GetSlot(i);
-		if (Slot.IsEmpty() || !Slot.ItemDef) continue;
-		if (Slot.ItemDef->ItemType != EItemType::Loot) continue;
+	const FSellResult Result = Economy->SellLoot(Inventory);
 
-		FSellEntry Entry;
-		Entry.Icon        = Slot.ItemDef->Icon;
-		Entry.Quantity    = Slot.Quantity;
-		Entry.CoinsEarned = FMath::RoundToInt(Slot.ItemDef->BaseValue) * Slot.Quantity;
-		TotalEarned      += Entry.CoinsEarned;
-		Entries.Add(Entry);
-	}
-
-	// Remove loot slots (reverse so indices stay valid)
-	for (int32 i = Inventory->GetTotalSlotCount() - 1; i >= 0; i--)
-	{
-		const FInventorySlot& Slot = Inventory->GetSlot(i);
-		if (!Slot.IsEmpty() && Slot.ItemDef && Slot.ItemDef->ItemType == EItemType::Loot)
-		{
-			Inventory->RemoveItem(i, Slot.Quantity);
-		}
-	}
-
-	AddDOSCoins(TotalEarned);
+	// Keep the pawn's cached balance in sync with the save the subsystem just credited.
+	DOSCoins = Result.NewBalance;
 
 	PlayerController = PlayerController == nullptr ? Cast<ADefaultPlayerController>(Controller) : PlayerController;
 	if (PlayerController)
 	{
 		if (APlayerHUD* HUD = Cast<APlayerHUD>(PlayerController->GetHUD()))
 		{
-			HUD->ShowSellSummary(Entries, TotalEarned, DOSCoins);
+			HUD->ShowSellSummary(Result.Entries, Result.TotalEarned, DOSCoins);
 		}
 	}
 }
