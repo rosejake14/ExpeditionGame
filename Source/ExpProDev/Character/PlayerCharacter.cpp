@@ -188,6 +188,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		if (InteractAction)
 			Input->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerCharacter::InteractButtonPressed);
+		if (ExtractAction)
+			Input->BindAction(ExtractAction, ETriggerEvent::Started, this, &APlayerCharacter::ExtractButtonPressed);
 		if (ScrollHotbarAction)
 			Input->BindAction(ScrollHotbarAction, ETriggerEvent::Triggered, this, &APlayerCharacter::ScrollHotbar);
 		if (ToggleInventoryAction)
@@ -538,6 +540,21 @@ void APlayerCharacter::InteractButtonPressed(const FInputActionInstance& Instanc
 		I->Interact(this);
 }
 
+void APlayerCharacter::ExtractButtonPressed(const FInputActionInstance& Instance)
+{
+	// Only extracts when standing in an extraction zone; separate key from generic Interact.
+	if (!CurrentExtractionZone) return;
+
+	// Drop the on-screen prompt now that the sell summary is taking over.
+	if (APlayerHUD* HUD = GetPlayerHUD())
+		HUD->HideExtractPrompt();
+
+	// The freeze is applied when the sell summary is shown (and released by its Continue button),
+	// so it stays balanced even if the summary can't be displayed.
+	if (IInteractable* Zone = Cast<IInteractable>(CurrentExtractionZone))
+		Zone->Interact(this);
+}
+
 void APlayerCharacter::ToggleInventoryButtonPressed(const FInputActionInstance& Instance)
 {
 	APlayerHUD* HUD = PlayerController ? Cast<APlayerHUD>(PlayerController->GetHUD()) : nullptr;
@@ -563,6 +580,71 @@ void APlayerCharacter::ClearPendingInteractableIfMatch(AActor* Interactable)
 {
 	if (PendingInteractable == Interactable)
 		PendingInteractable = nullptr;
+}
+
+void APlayerCharacter::SetExtractionZone(AActor* Zone)
+{
+	CurrentExtractionZone = Zone;
+
+	if (APlayerHUD* HUD = GetPlayerHUD())
+		HUD->ShowExtractPrompt(BuildExtractPromptText());
+}
+
+void APlayerCharacter::ClearExtractionZoneIfMatch(AActor* Zone)
+{
+	if (CurrentExtractionZone == Zone)
+	{
+		CurrentExtractionZone = nullptr;
+		if (APlayerHUD* HUD = GetPlayerHUD())
+			HUD->HideExtractPrompt();
+	}
+}
+
+APlayerHUD* APlayerCharacter::GetPlayerHUD() const
+{
+	if (ADefaultPlayerController* PC = Cast<ADefaultPlayerController>(Controller))
+		return Cast<APlayerHUD>(PC->GetHUD());
+	return nullptr;
+}
+
+FText APlayerCharacter::BuildExtractPromptText() const
+{
+	FText KeyName = FText::FromString(TEXT("Extract"));
+
+	if (ExtractAction)
+	{
+		if (const APlayerController* PC = Cast<APlayerController>(Controller))
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+				ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+			{
+				const TArray<FKey> Keys = Subsystem->QueryKeysMappedToAction(ExtractAction);
+				if (Keys.Num() > 0)
+					KeyName = Keys[0].GetDisplayName();
+			}
+		}
+	}
+
+	return FText::Format(
+		NSLOCTEXT("Extraction", "ExtractPrompt", "Press [{0}] to Extract"), KeyName);
+}
+
+void APlayerCharacter::FreezeForExtraction()
+{
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->DisableMovement();
+}
+
+void APlayerCharacter::UnfreezeAfterExtraction()
+{
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	// Bring the prompt back if the player is still standing in the extraction zone.
+	if (CurrentExtractionZone)
+	{
+		if (APlayerHUD* HUD = GetPlayerHUD())
+			HUD->ShowExtractPrompt(BuildExtractPromptText());
+	}
 }
 
 void APlayerCharacter::SprintButtonPressed(const FInputActionInstance& Instance)

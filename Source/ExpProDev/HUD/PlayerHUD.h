@@ -15,6 +15,7 @@ class UQuestDefinition;
 class APlayerCharacter;
 class AQuestGiverNPC;
 class USellSummaryWidget;
+class UExtractPromptWidget;
 
 USTRUCT(BlueprintType)
 struct FHUDPackage
@@ -77,8 +78,17 @@ public:
 	UPROPERTY()
 	USellSummaryWidget* SellSummaryWidget;
 
+	UPROPERTY(EditAnywhere, Category = "Extraction")
+	TSubclassOf<UExtractPromptWidget> ExtractPromptWidgetClass;
+	UPROPERTY()
+	UExtractPromptWidget* ExtractPromptWidget;
+
 	void ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests, AQuestGiverNPC* Giver);
 	void ShowSellSummary(const TArray<FSellEntry>& Entries, int32 TotalEarned, int32 NewBalance);
+
+	// Extraction-zone prompt ("Press [X] to Extract"). PromptText is resolved by the caller.
+	void ShowExtractPrompt(const FText& PromptText);
+	void HideExtractPrompt();
 
 protected:
 	virtual void BeginPlay() override;

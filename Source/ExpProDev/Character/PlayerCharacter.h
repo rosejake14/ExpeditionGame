@@ -56,6 +56,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* InteractAction;
 
+	// Dedicated "extract / sell loot" key, separate from the generic Interact key.
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* ExtractAction;
+
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* ScrollHotbarAction;
 
@@ -93,6 +97,7 @@ protected:
 	void AimWeaponButtonPressed(const FInputActionInstance& Instance);
 	void AimWeaponButtonReleased(const FInputActionInstance& Instance);
 	void InteractButtonPressed(const FInputActionInstance& Instance);
+	void ExtractButtonPressed(const FInputActionInstance& Instance);
 	void ScrollHotbar(const FInputActionInstance& Instance);
 	void ToggleInventoryButtonPressed(const FInputActionInstance& Instance);
 	void SprintButtonPressed(const FInputActionInstance& Instance);
@@ -194,6 +199,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<AActor> PendingInteractable;
 
+	// Extraction zone the player is currently standing in (drives the dedicated Extract key).
+	UPROPERTY()
+	TObjectPtr<AActor> CurrentExtractionZone;
+
 	UFUNCTION(Server, Reliable) // Reliable - garuntee to be executed. Unreliable - potential to be dropped.
 	void ServerEquipButtonPressed();
 
@@ -203,6 +212,12 @@ private:
 
 	UPROPERTY()
 	class ADefaultPlayerController* PlayerController;
+
+	// Resolves the player's HUD (null if unavailable).
+	class APlayerHUD* GetPlayerHUD() const;
+
+	// Builds the "Press [X] to Extract" prompt, resolving the actual key bound to ExtractAction.
+	FText BuildExtractPromptText() const;
 public:
 	// FORCEINLINE:
 	// Inlining a function makes the preprocessor replace each function call to it with the body of the function itself.
@@ -217,6 +232,14 @@ public:
 
 	void SetPendingInteractable(AActor* Interactable);
 	void ClearPendingInteractableIfMatch(AActor* Interactable);
+
+	void SetExtractionZone(AActor* Zone);
+	void ClearExtractionZoneIfMatch(AActor* Zone);
+
+	// Stop/allow movement during the extraction sell summary. Unfreeze is driven by the summary's
+	// Continue button (USellSummaryWidget).
+	void FreezeForExtraction();
+	void UnfreezeAfterExtraction();
 
 	FORCEINLINE class UInventoryComponent* GetInventory() const { return Inventory; }
 	FORCEINLINE class UQuestManagerComponent* GetQuestManager() const { return QuestManager; }

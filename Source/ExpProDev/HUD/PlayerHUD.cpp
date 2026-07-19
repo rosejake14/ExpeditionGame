@@ -11,6 +11,7 @@
 #include "QuestWidget.h"
 #include "QuestSelectionWidget.h"
 #include "SellSummaryWidget.h"
+#include "ExtractPromptWidget.h"
 #include "Character/PlayerCharacter.h"
 #include "Quest/QuestDefinition.h"
 
@@ -163,6 +164,35 @@ void APlayerHUD::ShowSellSummary(const TArray<FSellEntry>& Entries, int32 TotalE
 
 	PC->SetShowMouseCursor(true);
 	PC->SetInputMode(FInputModeUIOnly());
+
+	// Freeze the pawn while the summary is up; USellSummaryWidget's Continue button unfreezes.
+	if (APlayerCharacter* Player = Cast<APlayerCharacter>(PC->GetPawn()))
+		Player->FreezeForExtraction();
+}
+
+void APlayerHUD::ShowExtractPrompt(const FText& PromptText)
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC || !ExtractPromptWidgetClass) return;
+
+	if (!ExtractPromptWidget)
+	{
+		ExtractPromptWidget = CreateWidget<UExtractPromptWidget>(PC, ExtractPromptWidgetClass);
+		if (ExtractPromptWidget)
+			ExtractPromptWidget->AddToViewport(5);
+	}
+
+	if (ExtractPromptWidget)
+	{
+		ExtractPromptWidget->SetPromptText(PromptText);
+		ExtractPromptWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+}
+
+void APlayerHUD::HideExtractPrompt()
+{
+	if (ExtractPromptWidget)
+		ExtractPromptWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void APlayerHUD::ShowQuestSelection(APlayerCharacter* Player, const TArray<UQuestDefinition*>& Quests, AQuestGiverNPC* Giver)

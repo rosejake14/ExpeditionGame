@@ -22,10 +22,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Extraction")
 	UWeaponRegistry* WeaponRegistry;
 
-	// How far up/down to trace when placing spawned weapons on the ground.
-	UPROPERTY(EditAnywhere, Category = "Extraction", meta = (ClampMin = 0.f))
-	float GroundTraceHeight = 2000.f;
-
 protected:
 	virtual void BeginPlay() override;
 

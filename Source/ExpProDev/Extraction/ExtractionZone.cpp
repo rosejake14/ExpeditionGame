@@ -7,6 +7,7 @@
 #include "Weapon/WeaponRegistry.h"
 #include "Weapon/WeaponDefinition.h"
 #include "Weapon/Weapon.h"
+#include "Inventory/ItemPickup.h"
 #include "Save/ExpProSaveGame.h"
 #include "Save/SaveGameSubsystem.h"
 
@@ -63,25 +64,13 @@ void AExtractionZone::SpawnPurchasedWeapons()
 
 		for (int32 i = 0; i < Pair.Value; ++i)
 		{
-			// Random point within the box footprint, traced down to the ground
+			// Random point within the box footprint, dropped onto the floor beneath it.
 			const FVector CandidateXY(
 				Origin.X + FMath::FRandRange(-Extent.X, Extent.X),
 				Origin.Y + FMath::FRandRange(-Extent.Y, Extent.Y),
 				Origin.Z);
 
-			FVector SpawnLocation = CandidateXY;
-
-			FHitResult Hit;
-			FCollisionQueryParams QueryParams;
-			QueryParams.AddIgnoredActor(this);
-
-			if (GetWorld()->LineTraceSingleByChannel(Hit,
-				CandidateXY + FVector(0.f, 0.f, GroundTraceHeight),
-				CandidateXY - FVector(0.f, 0.f, GroundTraceHeight),
-				ECC_WorldStatic, QueryParams))
-			{
-				SpawnLocation = Hit.ImpactPoint;
-			}
+			const FVector SpawnLocation = AItemPickup::GroundedLocation(GetWorld(), CandidateXY, this);
 
 			FActorSpawnParameters Params;
 			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
@@ -101,7 +90,7 @@ void AExtractionZone::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AAc
 {
 	if (APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor))
 	{
-		Player->SetPendingInteractable(this);
+		Player->SetExtractionZone(this);
 		Player->OnEnteredExtractionZone();
 	}
 }
@@ -111,7 +100,7 @@ void AExtractionZone::OnBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, 
 {
 	if (APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor))
 	{
-		Player->ClearPendingInteractableIfMatch(this);
+		Player->ClearExtractionZoneIfMatch(this);
 		Player->OnExitedExtractionZone();
 	}
 }

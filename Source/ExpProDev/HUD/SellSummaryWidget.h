@@ -18,6 +18,12 @@ public:
 	void InitSummary(const TArray<FSellEntry>& Entries, int32 TotalEarned, int32 NewBalance);
 
 protected:
+	virtual void NativeConstruct() override;
+
+	// Closes the summary, restores gameplay input, and unfreezes the player.
+	UFUNCTION()
+	void HandleContinueClicked();
+
 	UPROPERTY(meta = (BindWidget))
 	class UScrollBox* ItemListContainer;
 
