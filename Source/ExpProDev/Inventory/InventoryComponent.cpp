@@ -20,6 +20,11 @@ bool UInventoryComponent::AddItem(UItemDefinition* ItemDef, int32 Quantity, AWea
 	if (!ItemDef || Quantity <= 0) return false;
 
 	// Try stacking onto an existing slot first
+	// TECH_DEBT(TD-BUG-1): ITEM LOSS. Only the FIRST partial stack is filled, and any remainder
+	// (Quantity - ToAdd) is silently dropped while still returning true — so AItemPickup::Interact
+	// destroys the pickup and the surplus is gone. Picking up 5 of a max-1-space stack loses 4.
+	// TECH_DEBT(TD-BUG-2): the remainder should cascade into further partial stacks and then into
+	// empty slots; partial adds need a contract with AItemPickup so the pickup keeps what didn't fit.
 	if (ItemDef->MaxStackSize > 1)
 	{
 		int32 StackIndex = FindExistingStack(ItemDef);
@@ -47,6 +52,8 @@ bool UInventoryComponent::RemoveItem(int32 SlotIndex, int32 Quantity)
 {
 	if (!Slots.IsValidIndex(SlotIndex) || Slots[SlotIndex].IsEmpty()) return false;
 
+	// TECH_DEBT(TD-BUG-3): Quantity is unvalidated — a negative value silently inflates the stack,
+	// and over-removal clears the slot while still reporting success to the caller.
 	FInventorySlot& Slot = Slots[SlotIndex];
 	Slot.Quantity -= Quantity;
 	if (Slot.Quantity <= 0)

@@ -26,6 +26,10 @@ void UHotbarWidget::InitHotbar(UInventoryComponent* Inventory)
 		}
 	}
 
+	// TECH_DEBT(TD-BUG-10): binds without unbinding first, and InitHotbar is reached from two paths
+	// (APlayerHUD::AddHotbarWidget and InitHotbarForInventory via OnPossess). Whichever order they
+	// run in, the hotbar ends up refreshing twice per inventory change.
+	// UInventoryScreenWidget::InitInventory calls RemoveAll(this) first — mirror that here.
 	InventoryComp->OnInventoryChanged.AddUObject(this, &UHotbarWidget::Refresh);
 	Refresh();
 }

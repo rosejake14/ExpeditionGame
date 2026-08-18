@@ -27,6 +27,8 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 		SightConfig->SightRadius                  = Enemy->SightRadius;
 		SightConfig->LoseSightRadius              = Enemy->LoseSightRadius;
 		SightConfig->PeripheralVisionAngleDegrees = Enemy->PeripheralVisionAngle;
+		// TECH_DEBT(TD-ARCH-16): hardcoded stimulus age while every neighbouring value is designer-
+		// facing on AEnemyCharacter — expose it there too.
 		SightConfig->SetMaxAge(10.f);
 		SightConfig->DetectionByAffiliation.bDetectEnemies    = true;
 		SightConfig->DetectionByAffiliation.bDetectNeutrals   = true;
@@ -113,8 +115,13 @@ void AEnemyAIController::RefreshChase()
 	}
 
 	AEnemyCharacter* Enemy = Cast<AEnemyCharacter>(GetPawn());
+	// TECH_DEBT(TD-ARCH-15): every tuning default is duplicated here as a magic-number fallback
+	// (150.f range, 10.f damage, 1.5f cooldown, 1000.f roam radius, 3.f roam wait) alongside the
+	// real EditAnywhere defaults on AEnemyCharacter. Two sources of truth that already disagree.
 	float Range = Enemy ? Enemy->AttackRange : 150.f;
 
+	// TECH_DEBT(TD-BUG-6): GetPawn() is dereferenced unguarded — this fires on a repeating timer
+	// that is not cleared when the pawn is destroyed mid-chase.
 	float DistToTarget = FVector::Dist(GetPawn()->GetActorLocation(), TargetActor->GetActorLocation());
 
 	if (DistToTarget <= Range)
@@ -139,6 +146,9 @@ void AEnemyAIController::PerformAttack()
 	if (Enemy && Enemy->AttackMontage)
 		Enemy->PlayAnimMontage(Enemy->AttackMontage);
 
+	// TECH_DEBT(TD-BUG-7): damage lands on the same frame the montage starts, with no line-of-sight
+	// check and no re-test of range at the moment of impact. Enemies therefore hit through walls
+	// and land damage before the swing is visible. Should be driven by an anim notify + LOS trace.
 	UGameplayStatics::ApplyDamage(TargetActor, Damage, this, GetPawn(), UDamageType::StaticClass());
 
 	bCanAttack = false;
@@ -158,6 +168,8 @@ void AEnemyAIController::ForceChase(AActor* Target)
 
 void AEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	// TECH_DEBT(TD-ARCH-16): target selection is a hardcoded "Player" actor-tag string literal. It
+	// fails silently if the tag is missing from BP_PlayerCharacter and can't express factions.
 	if (!Actor || !Actor->ActorHasTag(FName("Player"))) return;
 
 	if (Stimulus.WasSuccessfullySensed())

@@ -7,15 +7,16 @@
 #include "Kismet/GameplayStatics.h"
 #include "PlayerController/DefaultPlayerController.h"
 
+// TECH_DEBT(TD-DEAD-13): VictimController and AttackerController are accepted and then ignored.
+// Every caller computes and passes them, so the death path looks like it supports kill attribution,
+// scoring and death messages when it does none of that. Either use them or drop the parameters.
 void ADefaultGameMode::PlayerEliminated(class APlayerCharacter* EliminatedCharacter,
 	class ADefaultPlayerController* VictimController, ADefaultPlayerController* AttackerController)
 {
-
 	if (EliminatedCharacter)
 	{
 		EliminatedCharacter->Eliminated();
 	}
-	
 }
 
 void ADefaultGameMode::RequestRespawn(class ACharacter* EliminatedCharacter, class AController* EliminatedController)

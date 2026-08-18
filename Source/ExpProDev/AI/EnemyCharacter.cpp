@@ -32,6 +32,9 @@ AEnemyCharacter::AEnemyCharacter()
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera,     ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
+	// TECH_DEBT(TD-ARCH-19): hardcoded content path in C++. If the asset is moved or renamed in the
+	// editor this fails silently at runtime (every enemy loses its animation) with no cook-time
+	// error. Should be an EditDefaultsOnly TSubclassOf set on the enemy BP.
 	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBP(
 		TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed"));
 	if (AnimBP.Succeeded())
@@ -74,6 +77,10 @@ void AEnemyCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UD
 		}
 	}
 
+	// TECH_DEBT(TD-BUG-19): the enemy is destroyed synchronously from inside its own damage
+	// broadcast, with no death state, ragdoll, montage or delay. Anything still iterating the
+	// damage delegates (or holding this actor) sees it vanish mid-callback, and there is no window
+	// in which a death animation could ever play.
 	DropLoot();
 	Destroy();
 }
@@ -111,6 +118,8 @@ void AEnemyCharacter::DropLoot()
 		const int32 Qty = FMath::RandRange(Entry.MinQuantity, Entry.MaxQuantity);
 
 		// Spread drops out a little, then drop each onto the floor beneath it.
+		// TECH_DEBT(TD-ARCH-20): magic 50uu spacing along a single world-X line — drops from two
+		// enemies that died near each other interleave, and the line ignores world geometry.
 		const FVector Near = Origin + FVector(Offset, 0.f, 0.f);
 		const FVector SpawnLocation = AItemPickup::GroundedLocation(World, Near, this);
 		Offset += 50.f;

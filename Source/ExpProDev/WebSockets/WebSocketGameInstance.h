@@ -8,9 +8,12 @@
 #include "RemotePlayer.h"
 #include "WebSocketGameInstance.generated.h"
 
-/**
- * 
- */
+// TECH_DEBT(TD-DEAD-1): DEAD PROTOTYPE. This is NOT the game's GameInstance — no GameInstanceClass
+// is set in Config/DefaultEngine.ini, so the engine uses the stock UGameInstance and none of this
+// ever runs. The WebSockets/ folder (this class, UWebSocketClient, ARemotePlayer,
+// AWSPlayerCharacter) is the only consumer of the WebSockets, Json and JsonUtilities module
+// dependencies, and WebSocketGameInstance.cpp includes Variant_Shooter/ShooterCharacter.h, which
+// keeps that dead variant linked too. Delete this folder first — it unblocks TD-DEAD-8.
 UCLASS()
 class EXPPRODEV_API UWebSocketGameInstance : public UGameInstance
 {

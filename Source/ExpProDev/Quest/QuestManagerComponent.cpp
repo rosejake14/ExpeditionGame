@@ -154,10 +154,14 @@ void UQuestManagerComponent::UpdateHUD()
 
 	if (ActiveQuest.bObjectiveComplete)
 	{
+		// TECH_DEBT(TD-ARCH-6): hardcoded English string, even though UQuestDefinition already
+		// carries a designer-authored ReturnObjective FText for exactly this. Not localisable and
+		// not editable without a recompile.
 		PC->SetHUDQuestText(TEXT("Return to Quest Giver"));
 		return;
 	}
 
+	// TECH_DEBT(TD-ARCH-5): the objective-text switch that has to grow for every new quest type.
 	FString Text;
 	switch (ActiveQuest.Definition->QuestType)
 	{

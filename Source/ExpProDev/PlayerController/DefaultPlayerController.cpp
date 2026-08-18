@@ -18,6 +18,11 @@ void ADefaultPlayerController::BeginPlay()
 }
 
 
+// TECH_DEBT(TD-ARCH-9): every SetHUD* function below repeats the same two-step ritual — a lazy
+// `PlayerHUD == nullptr ? Cast<>` re-resolve, then a hand-rolled chain of null checks reaching
+// three levels into the widget tree (PlayerHUD->PlayerOverlay->HealthBar). The pawn pushes state
+// into the HUD rather than the HUD observing the pawn, so any new stat means another near-identical
+// function here plus a matching push call site on APlayerCharacter. Delegates would collapse all of it.
 void ADefaultPlayerController::SetHUDHealth(float Health, float MaxHealth)
 {
 	// Is it valid, if not, cast to playerHUD.
@@ -60,6 +65,8 @@ void ADefaultPlayerController::SetHUDKillCount(int32 Count)
 
 void ADefaultPlayerController::AddKill()
 {
+	// TECH_DEBT(TD-BUG-16): KillCount is never reset — not on respawn, not on a new run, not on
+	// loading a different save slot. It only ever climbs for the lifetime of the controller.
 	SetHUDKillCount(++KillCount);
 }
 
@@ -88,6 +95,8 @@ void ADefaultPlayerController::SetHUDXP(float XP, float XPToNextLevel, int32 Lev
 // 
 //
 
+// TECH_DEBT(TD-ARCH-6): takes FString, not FText — quest text is unlocalisable by construction,
+// and callers are forced to .ToString() the FTexts that UQuestDefinition already stores properly.
 void ADefaultPlayerController::SetHUDQuestText(const FString& Text)
 {
 	PlayerHUD = PlayerHUD ? PlayerHUD : Cast<APlayerHUD>(GetHUD());

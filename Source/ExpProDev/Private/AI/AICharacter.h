@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "AICharacter.generated.h"
 
+// TECH_DEBT(TD-DEAD-2): DEAD CODE. Zero references anywhere in C++ or content — an empty ACharacter
+// subclass left over from an early AI experiment. Delete along with AAICharacterController.
 UCLASS()
 class AAICharacter : public ACharacter
 {

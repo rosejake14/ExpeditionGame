@@ -6,6 +6,11 @@
 #include "GameFramework/SaveGame.h"
 #include "ExpProSaveGame.generated.h"
 
+// TECH_DEBT(TD-ARCH-14): the schema below is everything the game persists. Carried inventory,
+// active quests and completed-quest history are all lost on quit, which is why a player can farm
+// the same quest repeatedly and why extraction is the only way loot survives a session. Adding
+// them needs stable identifiers on UItemDefinition / UQuestDefinition first (TD-ARCH-13), plus a
+// CurrentSaveVersion bump and a migration case in USaveGameSubsystem::MigrateIfNeeded.
 UCLASS()
 class EXPPRODEV_API UExpProSaveGame : public USaveGame
 {

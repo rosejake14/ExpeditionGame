@@ -6,6 +6,11 @@
 #include "Engine/DataAsset.h"
 #include "UpgradeDefinition.generated.h"
 
+// TECH_DEBT(TD-ARCH-7): upgrade EFFECTS are hardcoded to these two values. Adding a third (move
+// speed, stamina, loot magnet) requires C++ changes in three separate places: this enum, a new
+// bespoke getter on UUpgradeManagerComponent, and a new apply line in
+// APlayerCharacter::LoadPlayerData. A TMap<FName /*Attribute*/, float /*ValuePerRank*/> on the
+// definition would make new upgrades pure data authoring.
 UENUM(BlueprintType)
 enum class EUpgradeType : uint8
 {

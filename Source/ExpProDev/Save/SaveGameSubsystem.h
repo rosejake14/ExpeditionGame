@@ -50,6 +50,9 @@ public:
 	static UExpProSaveGame* LoadActiveSlot(const UObject* WorldContext);
 
 	// Synchronous write of an explicit save object to the active slot (menu / compatibility use).
+	// TECH_DEBT(TD-DEAD-11): no callers, and it is a trap — it writes straight past CachedSave, so
+	// the in-memory cache is left stale and the next flush silently overwrites whatever it wrote.
+	// Remove it, or make it route through the cache like every other writer.
 	UFUNCTION(BlueprintCallable, Category = "Save", meta = (WorldContext = "WorldContext"))
 	static void SaveToActiveSlot(const UObject* WorldContext, UExpProSaveGame* Save);
 

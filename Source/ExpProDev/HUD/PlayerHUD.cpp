@@ -208,6 +208,8 @@ void APlayerHUD::DrawHUD()
 	FVector2D ViewportSize;
 	if (GEngine)
 	{
+		// TECH_DEBT(TD-BUG-9): GEngine is checked but GameViewport is not — it is null during
+		// level transitions and in commandlet/headless runs, so this crashes rather than skipping.
 		GEngine->GameViewport->GetViewportSize(ViewportSize);
 		const FVector2D ViewportCentre(ViewportSize.X / 2.0f, ViewportSize.Y / 2.0f);
 

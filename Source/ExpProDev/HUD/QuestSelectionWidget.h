@@ -31,6 +31,9 @@ public:
 
 protected:
 	// Implement in Blueprint to rebuild the visual list after QuestOptions is populated
+	// TECH_DEBT(TD-BP-1): this event IS the quest list. With no C++ fallback, an unimplemented BP
+	// means talking to a quest giver opens an empty panel that captures the mouse — the quest flow
+	// looks broken with nothing logged to explain why.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Quest")
 	void OnQuestsReady();
 

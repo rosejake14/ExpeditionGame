@@ -87,6 +87,9 @@ void UShopWidgetBase::RefreshShop()
 	}
 }
 
+// TECH_DEBT(TD-ARCH-10): currency formatting is an inline FText::FromString pattern, repeated in
+// USellSummaryWidget, UUpgradeShopWidget and UWeaponShopWidget. None of these strings are
+// localisable, and the "DOS$" suffix is written out in six places.
 void UShopWidgetBase::SetBalanceText(int32 Balance)
 {
 	if (BalanceText)

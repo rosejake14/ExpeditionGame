@@ -8,6 +8,9 @@
 
 class UQuestDefinition;
 
+// TECH_DEBT(TD-DEAD-6): DORMANT. bEnabled defaults to false and quest turn-in moved to
+// AQuestGiverNPC, so every overlap early-outs. Kept only in case a placed instance still exists in
+// a shipped map — verify references in-editor, then delete.
 UCLASS()
 class EXPPRODEV_API AObjectReturnPoint : public AActor
 {

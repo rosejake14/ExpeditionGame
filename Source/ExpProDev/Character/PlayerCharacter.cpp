@@ -98,6 +98,8 @@ void APlayerCharacter::BeginPlay()
 
 	UpdateHUDHealth();
 
+	// TECH_DEBT(TD-BUG-14): 0.2s one-shot timer is a race workaround — the HUD widgets aren't
+	// constructed yet at pawn BeginPlay, so the XP push is simply delayed and hoped to land.
 	FTimerHandle XPHUDTimer;
 	GetWorldTimerManager().SetTimer(XPHUDTimer, this, &APlayerCharacter::UpdateHUDXP, 0.2f, false);
 
@@ -207,6 +209,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 void APlayerCharacter::MoveButton(const FInputActionInstance& Instance)
 {
 	FVector2D MovementDirection = Instance.GetValue().Get<FVector2D>();
+	// TECH_DEBT(TD-BUG-8): Controller is dereferenced unguarded — input can still be routed for a
+	// frame after unpossession (e.g. during the elimination/respawn handoff).
 	const FRotator Rotation(0.f, Controller->GetControlRotation().Yaw, Controller->GetControlRotation().Roll);
 	const FVector RightDirection( FRotationMatrix(Rotation).GetUnitAxis(EAxis::Y));
 	const FVector ForwardDirection( FRotationMatrix(Rotation).GetUnitAxis(EAxis::X));
@@ -251,10 +255,8 @@ void APlayerCharacter::ServerEquipButtonPressed_Implementation()
 
 void APlayerCharacter::CrouchButtonPressed(const FInputActionInstance& Instance)
 {
-	//
-	// TODO: Implement Crouching.
-	//
-	
+	// TECH_DEBT(TD-STUB-1): crouch is bound and bIsCrouched reaches the anim BP, but no crouch
+	// capsule sizing, speed change or animation set exists — pressing it does nothing visible.
 	Crouch();
 }
 
@@ -282,10 +284,13 @@ void APlayerCharacter::AimWeaponButtonReleased(const FInputActionInstance& Insta
 	}
 }
 
+// TECH_DEBT(TD-ARCH-18): this is the only reason the pawn ticks every frame, and all it does is
+// copy one rotation value the anim instance could read itself. The turn-in-place work below was
+// abandoned half-finished, and AO_Yaw actually holds Pitch — the name is a leftover.
 void APlayerCharacter::AimOffset(float DeltaTime)
 {
 	if (Combat && Combat->EquippedWeapon == nullptr){return;}
-	
+
 	FVector Velocity = GetVelocity();
 	Velocity.Z = 0.f;
 	float Speed = Velocity.Size();
@@ -336,11 +341,8 @@ void APlayerCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const U
 
 	Health = FMath::Clamp(Health - Damage,0.f, MaxHealth);
 
-	//
-	// TODO: RoseJ - Implement Hit React Montage
-	// PlayHitReactMontage();
-	//
-
+	// TECH_DEBT(TD-STUB-2): hit reactions were never implemented — taking damage has no animation
+	// or camera feedback anywhere in the game. PlayHitReactMontage() does not exist.
 	UpdateHUDHealth();
 	
 	if (Health <= 0.f)
@@ -358,11 +360,7 @@ void APlayerCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const U
 
 void APlayerCharacter::OnRep_Health()
 {
-	//
-	// TODO: RoseJ - Implement Hit React Montage
-	// PlayHitReactMontage();
-	//
-
+	// TECH_DEBT(TD-STUB-2): see RecieveDamage — the client-side hit reaction is stubbed too.
 	UpdateHUDHealth();
 }
 
@@ -508,6 +506,9 @@ void APlayerCharacter::DropAllItemsOnDeath()
 			Pickup->Quantity = Slot.Quantity;
 
 			// Only clear the slot once its pickup is safely in the world.
+			// TECH_DEBT(TD-BUG-21): Slot aliases the live array element that RemoveItem clears, and
+			// SpawnActor above can run overlap callbacks that also mutate the inventory. Safe today
+			// only because dead players are filtered out of pickup — copy the slot out first.
 			Inventory->RemoveItem(i, Slot.Quantity);
 		}
 	}
@@ -517,13 +518,14 @@ void APlayerCharacter::MulticastEliminated_Implementation()
 {
 	bEliminated = true;
 
-	// TODO: PlayElimMontage();
-	// DEATH ANIMATIONS LEC:101
-	// Dissolve effects LEC:103
+	// TECH_DEBT(TD-STUB-3): death animation and dissolve effects were never implemented — the pawn
+	// just freezes in place for EliminatedDelay seconds, then vanishes.
 
 	// Disable Player Movement
 	GetCharacterMovement()->DisableMovement();
 	GetCharacterMovement()->StopMovementImmediately();
+	// TECH_DEBT(TD-BUG-20): PlayerController is only populated on paths that ran the lazy cast
+	// (BeginPlay / PossessedBy / OnRep_Controller). If none did, input is silently left enabled.
 	if (PlayerController)
 	{
 		DisableInput(PlayerController);

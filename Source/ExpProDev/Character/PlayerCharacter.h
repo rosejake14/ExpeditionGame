@@ -10,6 +10,14 @@
 
 
 
+// TECH_DEBT(TD-ARCH-1): god object — this one class owns input, movement, sprint, health,
+// elimination, XP/levelling, currency, save/load orchestration, selling, interaction dispatch,
+// extraction-zone state and direct HUD pushes. Every gameplay feature ends up editing it.
+//
+// TECH_DEBT(TD-ARCH-8): the replication scaffolding below (OverlappingWeapon, Health OnReps,
+// Server/NetMulticast RPCs, HasAuthority branching) is inherited from the multiplayer prototype.
+// The project is singleplayer-first, so none of it is exercised or tested, but it still shapes
+// how every new feature has to be written.
 UCLASS()
 class EXPPRODEV_API APlayerCharacter : public ACharacter
 {
@@ -269,11 +277,15 @@ public:
 	void LoadPlayerData();
 	void SellLoot();
 
+	// TECH_DEBT(TD-BUG-15): cheat commands compiled into every configuration, Shipping included.
+	// They should sit behind #if !UE_BUILD_SHIPPING or move to a UCheatManager.
 	UFUNCTION(Exec) void WipeSave();
 	UFUNCTION(Exec) void SetLevel(int32 NewLevel);
 	UFUNCTION(Exec) void SetDOSCoins(int32 Amount);
 
 	// Called by AExtractionZone on overlap — implement in BP_PlayerCharacter to show/hide prompt
+	// TECH_DEBT(TD-BP-1): no C++ fallback. If BP_PlayerCharacter doesn't implement these they are
+	// silent no-ops, and nothing tells a tester the overlap fired.
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnEnteredExtractionZone();
 	UFUNCTION(BlueprintImplementableEvent)

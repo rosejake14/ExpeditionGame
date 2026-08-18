@@ -7,6 +7,9 @@
 #include "GameFramework/Actor.h"
 #include "ProcEnvironmentGenerator.generated.h"
 
+// TECH_DEBT(TD-DEAD-10): PROTOTYPE. Not part of the island gameplay loop and referenced by no
+// shipped map. It is the sole reason the module depends on ProceduralMeshComponent, and the only
+// code still living under the template's Public/Private root folders. Confirm intent, then delete.
 UCLASS()
 class EXPPRODEV_API AProcEnvironmentGenerator : public AActor
 {

@@ -25,6 +25,14 @@ struct FActiveQuestState
 	int32 KillCount         = 0;
 };
 
+// TECH_DEBT(TD-ARCH-4): exactly ONE quest can be active at a time (a single FActiveQuestState).
+// The whole accept/cancel/complete API is written around that assumption, and AQuestGiverNPC has
+// to block every other NPC while a quest is held. Supporting concurrent quests means reworking
+// this API surface, the giver logic and the HUD together.
+//
+// TECH_DEBT(TD-ARCH-5): quest behaviour is a hardcoded EQuestType switch. Adding a third type
+// (escort, reach-location, timed) means editing this component, UQuestDefinition and the HUD.
+// Polymorphic objective objects on the definition would make it data-driven.
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class EXPPRODEV_API UQuestManagerComponent : public UActorComponent
 {
@@ -51,6 +59,8 @@ public:
 private:
 	FActiveQuestState ActiveQuest;
 
+	// TECH_DEBT(TD-ARCH-14): completion history lives only on this component and is never persisted,
+	// so every completed quest is offered again after a restart and can be farmed for XP.
 	UPROPERTY()
 	TSet<TObjectPtr<UQuestDefinition>> CompletedQuests;
 

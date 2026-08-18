@@ -29,6 +29,8 @@ protected:
 
 	// Implement this in Blueprint — open the map, dismiss the widget, etc.
 	// bIsNewSave is true when the player chose an empty slot (so you know to skip a "continue?" prompt).
+	// TECH_DEBT(TD-BP-1): no C++ fallback — if the BP doesn't implement this, picking a save slot
+	// marks it active and then does nothing, stranding the player on the menu.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Save")
 	void OnSlotSelected(int32 SlotIndex, bool bIsNewSave);
 

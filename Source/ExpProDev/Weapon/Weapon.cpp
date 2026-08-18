@@ -21,7 +21,9 @@ AWeapon::AWeapon()
 	WeaponMesh->SetupAttachment(RootComponent);
 	SetRootComponent(WeaponMesh);
 	// Using CCD to avoid issues with Weapon Meshes falling through the ground on clients.
-	// TODO: This should be looked at turning off in the future as this is not efficient...
+	// TECH_DEBT(TD-BUG-22): CCD is forced on for every weapon at all times to paper over dropped
+	// weapons tunnelling through the floor. It should be scoped to the dropped/simulating state,
+	// or the collision setup fixed so it isn't needed at all.
 	WeaponMesh->SetUseCCD(true);
 	WeaponMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECR_Ignore);
@@ -141,6 +143,11 @@ void AWeapon::Fire(const FVector& HitTarget)
 void AWeapon::ApplyImpact(const FVector& HitTarget)
 {
 	if (BaseDamage <= 0.f || !GetWorld()) return;
+
+	// TECH_DEBT(TD-BUG-4): UCombatComponent::TraceUnderCrosshairs already resolved the actor under
+	// the crosshair, but only the impact POINT is passed through — so this second trace, from the
+	// weapon actor's origin rather than the camera, can hit a different actor (or be blocked by
+	// cover the camera trace saw past). Pass the resolved FHitResult through instead.
 
 	// Trace from weapon location to the confirmed hit point to find the target actor
 	FHitResult HitResult;

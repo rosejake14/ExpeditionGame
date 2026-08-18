@@ -38,23 +38,18 @@ void AProjectile::BeginPlay()
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& HitResult)
 {
+	// TECH_DEBT(TD-DEAD-4): ADemoCharacterAI is dead code superseded by AEnemyCharacter, and this
+	// cast is the only thing keeping the demo AI classes linked into the build.
+	// TECH_DEBT(TD-STUB-2): both branches are empty — the casts classify the hit actor for a hit
+	// reaction that was never written, so this whole block has no effect.
 	ADemoCharacterAI* AI = Cast<ADemoCharacterAI>(OtherActor);
 	APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(OtherActor);
 	if (PlayerCharacter)
 	{
-		//
-		// TODO: RoseJ - Implement Hit React Montage
-		//
 		//PlayerCharacter.MulticastHit();
-		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, FString::Printf(TEXT("Hit Friendly Player Character")));
-
 	}
 	else if (AI)
 	{
-		//
-		// TODO: RoseJ - Implement Hit React Montage For enemies
-		//
-		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, FString::Printf(TEXT("Hit Enemy Character")));
 	}
 	Destroy();
 }

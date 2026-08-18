@@ -17,6 +17,11 @@ enum class EItemType : uint8
 	Weapon		UMETA(DisplayName = "Weapon")
 };
 
+// TECH_DEBT(TD-ARCH-13): no stable identifier. Items are referenced only by raw UItemDefinition*,
+// so there is no way to write one to a save file and resolve it back on load. This is the concrete
+// blocker for persisting carried inventory (TD-ARCH-14). UUpgradeDefinition and UWeaponDefinition
+// both already carry an FName Id for exactly this reason — UItemDefinition and UQuestDefinition
+// need the same treatment.
 UCLASS(BlueprintType)
 class EXPPRODEV_API UItemDefinition : public UPrimaryDataAsset
 {

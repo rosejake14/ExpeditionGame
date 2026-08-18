@@ -119,6 +119,8 @@ int32 AEnemySpawner::CountAliveEnemies()
 
 bool AEnemySpawner::TrySpawnOne(bool bIgnoreTypeCaps)
 {
+	// TECH_DEBT(TD-ARCH-21): the eligibility filter is written out twice below (once to total the
+	// weights, once to pick) and has to be kept in sync by hand.
 	// Build weighted pool
 	float TotalWeight = 0.f;
 	for (int32 i = 0; i < SpawnEntries.Num(); ++i)
@@ -143,6 +145,11 @@ bool AEnemySpawner::TrySpawnOne(bool bIgnoreTypeCaps)
 	if (ChosenIndex < 0) return false;
 
 	// Random point inside spawn radius, traced to ground
+	// TECH_DEBT(TD-BUG-18): the candidate point is only traced to geometry — it is never projected
+	// onto the navmesh. Enemies spawned off-nav can never path, so they stand still forever; the
+	// spawner still counts them as alive and stops replenishing. Use ProjectPointToNavigation.
+	// TECH_DEBT(TD-ARCH-20): the ±2000uu trace span is a magic number repeated in
+	// AItemPickup::GroundedLocation — one shared ground-snap helper should own it.
 	const float Angle    = FMath::FRandRange(0.f, 2.f * PI);
 	const float Distance = FMath::FRandRange(0.f, SpawnRadius);
 	const FVector CandidateXY = GetActorLocation()

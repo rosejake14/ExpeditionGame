@@ -26,12 +26,14 @@ void UCombatComponent::BeginPlay()
 	if (PlayerCharacter)
 		PlayerController = Cast<ADefaultPlayerController>(PlayerCharacter->Controller);
 
-	// Fixed issue where the combat wasn't ticking.
+	// TECH_DEBT(TD-BUG-13): manually re-registering the tick function at BeginPlay is a workaround
+	// for a tick registration failure that was never diagnosed. A component created in the owner's
+	// constructor with bCanEverTick set should already be ticking; something upstream (likely the
+	// component being added after registration) is the real cause.
 	PrimaryComponentTick.Target = this;
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.SetTickFunctionEnable(true);
 	PrimaryComponentTick.RegisterTickFunction(GetComponentLevel());
-	//
 }
 
 
@@ -100,6 +102,7 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	FVector2D CrosshairLocation(ViewportSize.X/2.f, ViewportSize.Y/2.f);
 	FVector CrosshairWorldPosition;
 	FVector CrosshairWorldDirection;
+	// TECH_DEBT(TD-BUG-12): hardcoded player index 0 instead of this component's owning controller.
 	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
 		UGameplayStatics::GetPlayerController(this, 0),
 		CrosshairLocation,
@@ -128,6 +131,9 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 }
 
 
+// TECH_DEBT(TD-ARCH-17): there is no fire-rate, ammo, reload or automatic-fire model. bPressed is
+// stored and replicated but never used to drive sustained fire, so every weapon is semi-auto and
+// fires exactly as fast as the player can click.
 void UCombatComponent::FireButtonPressed(bool bPressed)
 {
 	bFireButtonPressed = bPressed;

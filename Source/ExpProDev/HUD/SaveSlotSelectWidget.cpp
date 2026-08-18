@@ -10,6 +10,9 @@ void USaveSlotSelectWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	// TECH_DEBT(TD-BUG-17): the three BindWidget pointers are dereferenced with no null guard. If
+	// the widget BP is missing (or renames) SlotEntry_0/1/2 this crashes on construct instead of
+	// logging. The slot count is also hardcoded to three here and in RefreshSlots.
 	SlotEntry_0->OnSelected.AddDynamic(this, &USaveSlotSelectWidget::HandleSlotSelected);
 	SlotEntry_1->OnSelected.AddDynamic(this, &USaveSlotSelectWidget::HandleSlotSelected);
 	SlotEntry_2->OnSelected.AddDynamic(this, &USaveSlotSelectWidget::HandleSlotSelected);

@@ -30,6 +30,9 @@ void AItemPickup::BeginPlay()
 	SphereCollision->OnComponentEndOverlap.AddDynamic(this, &AItemPickup::OnSphereEndOverlap);
 }
 
+// TECH_DEBT(TD-ARCH-18): every pickup in the level ticks individually just to bob and spin. With
+// enemy drops and death scatter this scales with world loot count. A material/vertex-animation
+// effect, or a single manager ticking the set, would cost nothing per instance.
 void AItemPickup::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -47,6 +50,9 @@ FVector AItemPickup::GroundedLocation(const UWorld* World, const FVector& Around
 
 	// Trace from well above to well below the point so we always cross the floor, even on slopes
 	// or when 'Around' starts slightly inside geometry.
+	// TECH_DEBT(TD-ARCH-20): 2000uu trace span and the +100uu lift below are unexplained magic
+	// numbers. AEnemySpawner::TrySpawnOne hand-rolls the same ±2000 trace separately — this helper
+	// should be the one place that knows how to put something on the ground.
 	const float TraceHeight = 2000.f;
 
 	FHitResult Hit;

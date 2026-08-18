@@ -15,6 +15,8 @@ enum class EQuestType : uint8
 	EnemyElimination    UMETA(DisplayName = "Enemy Elimination"),
 };
 
+// TECH_DEBT(TD-ARCH-13): no stable FName Id — quests can't be written to a save slot, which is why
+// active-quest progress and completion history are lost on quit (TD-ARCH-14).
 UCLASS(BlueprintType)
 class EXPPRODEV_API UQuestDefinition : public UPrimaryDataAsset
 {

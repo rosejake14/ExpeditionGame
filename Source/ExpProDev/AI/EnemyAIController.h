@@ -14,6 +14,9 @@ UENUM()
 enum class EEnemyAIState : uint8 { Roaming, Chasing };
 
 UCLASS()
+// TECH_DEBT(TD-ARCH-16): the FSM has only Roaming and Chasing — attacking is a timer bolted onto
+// the chase refresh rather than a state, so there is no wind-up, no strafing, no ranged behaviour
+// and no way for an archetype to override how it engages. Blocks enemy variety and bosses.
 class EXPPRODEV_API AEnemyAIController : public AAIController
 {
 	GENERATED_BODY()

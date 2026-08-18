@@ -31,9 +31,8 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 	bWeaponEquipped = PlayerCharacter->IsWeaponEquipped();
 
-	//
-	// TODO: Implement Crouching.
-	//
+	// TECH_DEBT(TD-STUB-1): this flag is plumbed through to the anim BP but no crouch animations,
+	// capsule resize or speed change exist — see APlayerCharacter::CrouchButtonPressed.
 	bIsCrouched = PlayerCharacter->bIsCrouched;
 
 	bAiming = PlayerCharacter->IsAiming();

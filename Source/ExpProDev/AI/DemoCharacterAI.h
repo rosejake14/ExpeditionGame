@@ -7,6 +7,9 @@
 #include "Inventory/LootTable.h"
 #include "DemoCharacterAI.generated.h"
 
+// TECH_DEBT(TD-DEAD-4): DEAD CODE. Superseded by AEnemyCharacter + AEnemyAIController. The only
+// remaining C++ reference is a no-op cast in AProjectile::OnHit. BP_PlayerCharacter is reported to
+// reference this class — clear that in-editor first, then delete this and DemoCharacterAIController.
 UCLASS()
 class EXPPRODEV_API ADemoCharacterAI : public ACharacter
 {

@@ -47,6 +47,10 @@ void AExtractionZone::BeginPlay()
 	SpawnPurchasedWeapons();
 }
 
+// TECH_DEBT(TD-BUG-11): this runs per-zone at BeginPlay and reads the shared purchased-weapon
+// counts without claiming them. Two extraction zones on one map therefore each spawn the FULL
+// purchased set, duplicating everything the player bought. The save is only decremented on pickup
+// (UCombatComponent::EquipWeapon), so the duplicates are free.
 void AExtractionZone::SpawnPurchasedWeapons()
 {
 	if (!WeaponRegistry) return;

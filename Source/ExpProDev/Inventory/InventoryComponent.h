@@ -44,6 +44,8 @@ public:
 
 	bool AddItem(class UItemDefinition* ItemDef, int32 Quantity = 1, class AWeapon* WeaponInstance = nullptr);
 	bool RemoveItem(int32 SlotIndex, int32 Quantity = 1);
+	// TECH_DEBT(TD-STUB-4): SwapSlots has no callers — the inventory screen is display-only. There
+	// is no DropSlot either, so items can only leave the inventory by selling or dying.
 	void SwapSlots(int32 IndexA, int32 IndexB);
 
 	const FInventorySlot& GetSlot(int32 Index) const;
@@ -55,6 +57,8 @@ public:
 	void SetActiveHotbarIndex(int32 Index);
 
 	// Broadcast whenever slots change — UI binds to this
+	// TECH_DEBT(TD-ARCH-23): non-dynamic multicast, so Blueprints can't bind to it and listeners
+	// have no unbind discipline (UHotbarWidget binds twice — see TD-BUG-10).
 	FOnInventoryChanged OnInventoryChanged;
 
 private:

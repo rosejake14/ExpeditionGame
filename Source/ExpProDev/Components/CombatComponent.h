@@ -6,6 +6,9 @@
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
+// TECH_DEBT(TD-ARCH-11): preprocessor macro in a public header — it leaks into every translation
+// unit that includes this file and can't be scoped or overridden per weapon. Should be a
+// constexpr float (or an EditDefaultsOnly range on AWeapon).
 #define TRACE_LENGTH 80000.f
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
