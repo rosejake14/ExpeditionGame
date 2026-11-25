@@ -3,10 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "InputMappingContext.h"
 
 #include "PlayerCharacter.generated.h"
+
+class UAbilitySystemComponent;
+class UHeroAttributeSet;
 
 
 
@@ -14,12 +18,14 @@
 // elimination, XP/levelling, currency, save/load orchestration, selling, interaction dispatch,
 // extraction-zone state and direct HUD pushes. Every gameplay feature ends up editing it.
 //
-// TECH_DEBT(TD-ARCH-8): the replication scaffolding below (OverlappingWeapon, Health OnReps,
+// TECH_DEBT(TD-ARCH-8): the replication scaffolding below (OverlappingWeapon,
 // Server/NetMulticast RPCs, HasAuthority branching) is inherited from the multiplayer prototype.
+// The Health OnRep that used to be part of this was removed when health moved into
+// UHeroAttributeSet — GAS owns attribute replication now.
 // The project is singleplayer-first, so none of it is exercised or tested, but it still shapes
 // how every new feature has to be written.
 UCLASS()
-class EXPPRODEV_API APlayerCharacter : public ACharacter
+class EXPPRODEV_API APlayerCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -115,21 +121,35 @@ protected:
 	void RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatedController, class AActor* DamageCauser);
 	void UpdateHUDHealth();
 
+	/**
+	 *  Fired by the ability system whenever Health or MaxHealth changes, from any source —
+	 *  damage, a heal, an upgrade effect. Bound in PossessedBy so the HUD can never fall out of
+	 *  step with the attributes the way it did when every caller had to remember to push it.
+	 *  Not a UFUNCTION: FOnGameplayAttributeValueChange is a plain multicast delegate.
+	 */
+	void HandleHealthAttributeChanged(const struct FOnAttributeChangeData& Data);
+
 	//	Blueprint Editable Variables
 
 	UPROPERTY(EditAnywhere, Category = "Audio")
 	class USoundBase* LevelUpSound;
 
 	// Player Health:
+	//
+	// Health and MaxHealth now live in UHeroAttributeSet — this is the designer-facing starting
+	// value they are initialised from, and what purchased health upgrades are added on top of.
+	// If BP_PlayerCharacter overrode the old MaxHealth property, set the same number here.
 	UPROPERTY(EditAnywhere, Category = PlayerStats)
-	float MaxHealth = 100.f;
-
-	// Captured from MaxHealth in PostInitializeComponents — upgrades are added on top of this
 	float BaseMaxHealth = 100.f;
-	UPROPERTY(ReplicatedUsing = OnRep_Health, BlueprintReadWrite, EditAnywhere, Category = PlayerStats)
-	float Health = 100.f;
-	UFUNCTION()
-	void OnRep_Health();
+
+	/**
+	 *  Writes BaseMaxHealth and the other starting stats into the attribute set.
+	 *  AHeroCharacter overrides this to take its numbers from its UHeroDefinition instead.
+	 */
+	virtual void InitialiseAttributes();
+
+	/** The attribute set, for subclasses that need to write starting values into it. */
+	class UHeroAttributeSet* GetAttributes() const { return Attributes; }
 
 	// Player XP / Level:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = PlayerStats)
@@ -145,10 +165,6 @@ protected:
 	// DOSCoin currency (persists across runs via save):
 	UPROPERTY(BlueprintReadOnly, Category = PlayerStats)
 	int32 DOSCoins = 0;
-
-	// Multiplier applied to all outgoing damage — set by UpgradeManagerComponent on load
-	UPROPERTY(BlueprintReadOnly, Category = PlayerStats)
-	float DamageMultiplier = 1.0f;
 
 	// Player Eliminated:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerStats)
@@ -191,6 +207,14 @@ private:
 
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
+
+	UPROPERTY(VisibleAnywhere)
+	class UAbilitySystemComponent* AbilitySystemComponent;
+
+	// Not a component — a plain subobject. UAbilitySystemComponent::InitializeComponent scans the
+	// owner for UAttributeSet subobjects and registers this one automatically.
+	UPROPERTY()
+	class UHeroAttributeSet* Attributes;
 
 	UPROPERTY(VisibleAnywhere)
 	class UCombatComponent* Combat;
@@ -259,13 +283,27 @@ public:
 	void MulticastEliminated();
 	
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
-	FORCEINLINE float GetHealth() const { return Health; }
-	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	FORCEINLINE bool IsElimmed() const { return bEliminated; }
+
+	// Health now lives in UHeroAttributeSet. These keep their old signatures deliberately, so
+	// every existing caller (ADefaultPlayerController's HUD push, AWeapon's damage scaling)
+	// compiles and behaves exactly as before.
+	float GetHealth() const;
+	float GetMaxHealth() const;
+
+	/** The ability system component driving this character's attributes and abilities. */
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	// Adds XP towards the current level, rolling over and levelling up as needed.
 	// Public so quests / pickups / kill rewards can grant XP without depending on each other.
 	void AddXP(float Amount);
+
+	/**
+	 *  Adds to the ultimate meter. Called on enemy kills only — quest and pickup XP deliberately
+	 *  do not charge ultimates, since the design is "build up from getting kills".
+	 *  Safe to call on a character with no ultimate; the attribute simply clamps.
+	 */
+	void GrantUltimateCharge(float Amount);
 
 	// Grants DOS$ (e.g. coin pickups). BlueprintCallable so pickup BPs can award currency.
 	UFUNCTION(BlueprintCallable, Category = "PlayerStats")
@@ -295,5 +333,5 @@ public:
 	FORCEINLINE float GetXP() const { return XP; }
 	FORCEINLINE float GetXPToNextLevel() const { return BaseXP + (Level - 1) * XPPerLevel; }
 	FORCEINLINE int32 GetDOSCoins() const { return DOSCoins; }
-	FORCEINLINE float GetDamageMultiplier() const { return DamageMultiplier; }
+	float GetDamageMultiplier() const;
 };

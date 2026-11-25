@@ -43,7 +43,9 @@ walking back. Die insured → loot kept, insurance consumed. Quit after death �
 
 ## E2 — Island difficulty tiers
 
-**Depends on:** TD-CFG-5 (a `GameInstanceClass` must exist to hold the choice across map travel).
+**Depends on:** a `GameInstanceClass` to hold the choice across map travel — now satisfied by
+`UExpProGameInstance` (`Source/ExpProDev/Core/`), added in Hero System phase 0. Store the chosen
+difficulty alongside `SelectedHeroId` / `SelectedLevel`.
 
 - `UDifficultyDefinition` (`UDataAsset`) in `Source/ExpProDev/Difficulty/`: DisplayName, Description,
   EnemyCountMultiplier, EnemyHealthMultiplier, EnemyDamageMultiplier, LootValueMultiplier,

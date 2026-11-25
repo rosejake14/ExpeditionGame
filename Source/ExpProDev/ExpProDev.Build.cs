@@ -26,6 +26,12 @@ public class ExpProDev : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
+			// Gameplay Ability System. GameplayTags/GameplayTasks come in transitively via
+			// GameplayAbilities, but are listed explicitly because project code includes them
+			// directly (Core/ExpProGameplayTags.h).
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks",
 			"OnlineSubsystemSteam",
 			"OnlineSubsystem",
 			"Json",

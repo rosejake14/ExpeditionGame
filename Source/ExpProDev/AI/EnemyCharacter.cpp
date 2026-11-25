@@ -72,6 +72,9 @@ void AEnemyCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UD
 		if (APlayerCharacter* Killer = Cast<APlayerCharacter>(PC->GetPawn()))
 		{
 			Killer->AddXP(XPReward);
+			// Ultimates build from kills, so the same reward feeds the meter. Quest XP does not
+			// come through here, which is deliberate — see APlayerCharacter::GrantUltimateCharge.
+			Killer->GrantUltimateCharge(XPReward);
 			if (UQuestManagerComponent* QM = Killer->GetQuestManager())
 				QM->NotifyEnemyKilled(GetClass());
 		}

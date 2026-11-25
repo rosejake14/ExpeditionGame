@@ -1,7 +1,7 @@
 # Claude Code
 CLAUDE.md
 TASKS_BACKLOG.md
-.claude/scheduled_tasks.lock
+.claude/*
 
 # Unreal Engine generated folders
 Binaries/

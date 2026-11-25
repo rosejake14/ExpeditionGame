@@ -12,7 +12,9 @@
 #include "QuestSelectionWidget.h"
 #include "SellSummaryWidget.h"
 #include "ExtractPromptWidget.h"
+#include "AbilityBarWidget.h"
 #include "Character/PlayerCharacter.h"
+#include "Hero/HeroCharacter.h"
 #include "Quest/QuestDefinition.h"
 
 void APlayerHUD::BeginPlay()
@@ -22,6 +24,33 @@ void APlayerHUD::BeginPlay()
 	AddHotbarWidget();
 	AddInventoryScreen();
 	AddQuestWidget();
+	AddAbilityBarWidget();
+}
+
+void APlayerHUD::AddAbilityBarWidget()
+{
+	APlayerController* PC = GetOwningPlayerController();
+	if (!PC || !AbilityBarWidgetClass) return;
+
+	AbilityBarWidget = CreateWidget<UAbilityBarWidget>(PC, AbilityBarWidgetClass);
+	if (!AbilityBarWidget) return;
+
+	AbilityBarWidget->AddToViewport();
+
+	// Same two-scenario handling as the hotbar: OnPossess may already have fired before the HUD
+	// reached BeginPlay, in which case the pawn is available right now.
+	if (AHeroCharacter* Hero = Cast<AHeroCharacter>(PC->GetPawn()))
+	{
+		AbilityBarWidget->InitAbilityBar(Hero);
+	}
+}
+
+void APlayerHUD::InitAbilityBarForHero(AHeroCharacter* Hero)
+{
+	if (AbilityBarWidget)
+	{
+		AbilityBarWidget->InitAbilityBar(Hero);
+	}
 }
 
 void APlayerHUD::AddPlayerOverlay()

@@ -3,6 +3,11 @@
 
 #include "Character/PlayerCharacter.h"
 
+#include "Abilities/DamageEffect.h"
+#include "Abilities/HeroAttributeSet.h"
+#include "Abilities/HeroSupportEffects.h"
+#include "AbilitySystemComponent.h"
+#include "Core/ExpProGameplayTags.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "ExpProDev.h"
@@ -45,6 +50,11 @@ APlayerCharacter::APlayerCharacter()
 	SpringArm->SocketOffset = FVector(0.f, 70.f, 23.f);
 	SpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 130.0f));
 	
+	// Ability system. Owned by the pawn: a fresh pawn on respawn gets fresh attributes, which is
+	// what we want — persistent progression lives in the save, not in the attribute set.
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	Attributes = CreateDefaultSubobject<UHeroAttributeSet>(TEXT("HeroAttributes"));
+
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	//Camera->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, "head");
 	//Camera->SetupAttachment(GetMesh(), FName("head"));
@@ -78,7 +88,6 @@ void APlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	//DOREPLIFETIME(APlayerCharacter, OverlappingWeapon);
 	DOREPLIFETIME_CONDITION(APlayerCharacter, OverlappingWeapon, COND_OwnerOnly);
-	DOREPLIFETIME(APlayerCharacter, Health);
 }
 
 void APlayerCharacter::PostInitializeComponents()
@@ -86,8 +95,43 @@ void APlayerCharacter::PostInitializeComponents()
 	Super::PostInitializeComponents();
 	if (Combat)
 		Combat->PlayerCharacter = this;
+}
 
-	BaseMaxHealth = MaxHealth;
+UAbilitySystemComponent* APlayerCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+float APlayerCharacter::GetHealth() const
+{
+	return Attributes ? Attributes->GetHealth() : 0.f;
+}
+
+float APlayerCharacter::GetMaxHealth() const
+{
+	return Attributes ? Attributes->GetMaxHealth() : 0.f;
+}
+
+float APlayerCharacter::GetDamageMultiplier() const
+{
+	return Attributes ? Attributes->GetDamageMultiplier() : 1.f;
+}
+
+void APlayerCharacter::InitialiseAttributes()
+{
+	if (!Attributes) return;
+
+	// Straight base-value writes rather than a GameplayEffect: these are starting values, not
+	// gameplay modifiers, and nothing should be able to strip them.
+	Attributes->InitMaxHealth(BaseMaxHealth);
+	Attributes->InitHealth(BaseMaxHealth);
+	Attributes->InitMaxStamina(100.f);
+	Attributes->InitStamina(100.f);
+	Attributes->InitDamageMultiplier(1.f);
+	Attributes->InitMoveSpeed(WalkSpeed);
+	Attributes->InitMaxUltimateCharge(100.f);
+	Attributes->InitUltimateCharge(0.f);
+	Attributes->InitDamage(0.f);
 }
 
 void APlayerCharacter::BeginPlay()
@@ -134,7 +178,26 @@ void APlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void APlayerCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	
+
+	// Owner and avatar are both this pawn — see the constructor for why the ASC lives here.
+	// Must happen before InitialiseAttributes, which writes through the ability system.
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		InitialiseAttributes();
+
+		// Push the HUD from the attribute itself rather than from each place that changes it.
+		// Damage used to be the only caller, so heals and upgrade effects moved the attribute
+		// without ever refreshing the bar.
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			UHeroAttributeSet::GetHealthAttribute())
+			.AddUObject(this, &APlayerCharacter::HandleHealthAttributeChanged);
+
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			UHeroAttributeSet::GetMaxHealthAttribute())
+			.AddUObject(this, &APlayerCharacter::HandleHealthAttributeChanged);
+	}
+
 	PlayerController = PlayerController == nullptr ? Cast<ADefaultPlayerController>(Controller) : PlayerController;
 	if (PlayerController)
 	{
@@ -338,14 +401,28 @@ void APlayerCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const U
 	class AController* InstigatedController, class AActor* DamageCauser)
 {
 	if (bEliminated) return;
+	if (Damage <= 0.f || !AbilitySystemComponent) return;
 
-	Health = FMath::Clamp(Health - Damage,0.f, MaxHealth);
+	// Enemies still deal damage through the stock OnTakeAnyDamage delegate — nothing on their
+	// side changed. This is the bridge: the engine's damage number becomes a GameplayEffect, so
+	// health is only ever modified through the ability system.
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	Context.AddInstigator(InstigatedController ? InstigatedController->GetPawn() : DamageCauser, DamageCauser);
+
+	const FGameplayEffectSpecHandle Spec =
+		AbilitySystemComponent->MakeOutgoingSpec(UDamageEffect::StaticClass(), 1.f, Context);
+	if (!Spec.IsValid()) return;
+
+	Spec.Data->SetSetByCallerMagnitude(ExpProTags::Data_Damage, Damage);
+	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data);
 
 	// TECH_DEBT(TD-STUB-2): hit reactions were never implemented — taking damage has no animation
 	// or camera feedback anywhere in the game. PlayHitReactMontage() does not exist.
-	UpdateHUDHealth();
-	
-	if (Health <= 0.f)
+	//
+	// No UpdateHUDHealth() call here: the attribute change delegate bound in PossessedBy covers
+	// it, along with every other source of health change.
+
+	if (GetHealth() <= 0.f)
 	{
 		ADefaultGameMode* DefaultGameMode = GetWorld()->GetAuthGameMode<ADefaultGameMode>();
 		if (DefaultGameMode)
@@ -358,24 +435,35 @@ void APlayerCharacter::RecieveDamage(AActor* DamagedActor, float Damage, const U
 	}
 }
 
-void APlayerCharacter::OnRep_Health()
+void APlayerCharacter::HandleHealthAttributeChanged(const FOnAttributeChangeData& Data)
 {
-	// TECH_DEBT(TD-STUB-2): see RecieveDamage — the client-side hit reaction is stubbed too.
 	UpdateHUDHealth();
 }
-
 
 void APlayerCharacter::UpdateHUDHealth()
 {
 	PlayerController = PlayerController == nullptr ? Cast<ADefaultPlayerController>(Controller) : PlayerController;
 	if (PlayerController)
 	{
-		PlayerController->SetHUDHealth(Health, MaxHealth);
+		PlayerController->SetHUDHealth(GetHealth(), GetMaxHealth());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to cast to Player Controller when updating HUD health"));
+		UE_LOG(LogExpProDev, Warning, TEXT("PlayerCharacter: no player controller when updating HUD health."));
 	}
+}
+
+void APlayerCharacter::GrantUltimateCharge(float Amount)
+{
+	if (Amount <= 0.f || !AbilitySystemComponent) return;
+
+	FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+	const FGameplayEffectSpecHandle Spec =
+		AbilitySystemComponent->MakeOutgoingSpec(UUltimateChargeEffect::StaticClass(), 1.f, Context);
+	if (!Spec.IsValid()) return;
+
+	Spec.Data->SetSetByCallerMagnitude(ExpProTags::Data_UltimateCharge, Amount);
+	AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*Spec.Data);
 }
 
 void APlayerCharacter::AddXP(float Amount)
@@ -664,9 +752,9 @@ void APlayerCharacter::WipeSave()
 	XP       = 0.f;
 	Level    = 1;
 	DOSCoins = 0;
-	DamageMultiplier = 1.0f;
-	MaxHealth = BaseMaxHealth;
-	Health    = MaxHealth;
+
+	// Back to the unmodified starting stat block — no upgrades applied.
+	InitialiseAttributes();
 
 	if (UpgradeManager)
 		UpgradeManager->ClearUpgrades();
@@ -721,12 +809,17 @@ void APlayerCharacter::LoadPlayerData()
 	Level    = Save->Level;
 	DOSCoins = Save->DOSCoins;
 
-	if (UpgradeManager)
+	if (UpgradeManager && Attributes)
 	{
 		UpgradeManager->LoadUpgrades(Save->PurchasedUpgrades);
-		MaxHealth        = BaseMaxHealth + UpgradeManager->GetHealthBonus();
-		Health           = MaxHealth;
-		DamageMultiplier = 1.0f + UpgradeManager->GetDamageMultiplierBonus();
+
+		// TECH_DEBT(TD-ARCH-7): still bespoke per-upgrade wiring. Phase 5 of the hero system
+		// replaces this with one GameplayEffect built from each UUpgradeDefinition, at which
+		// point these three lines and the EUpgradeType enum both go away.
+		const float UpgradedMaxHealth = BaseMaxHealth + UpgradeManager->GetHealthBonus();
+		Attributes->InitMaxHealth(UpgradedMaxHealth);
+		Attributes->InitHealth(UpgradedMaxHealth);
+		Attributes->InitDamageMultiplier(1.0f + UpgradeManager->GetDamageMultiplierBonus());
 	}
 }
 

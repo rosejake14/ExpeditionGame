@@ -58,6 +58,11 @@ public:
 	UPROPERTY()
 	class UHotbarWidget* HotbarWidget;
 
+	UPROPERTY(EditAnywhere, Category = "Abilities")
+	TSubclassOf<class UAbilityBarWidget> AbilityBarWidgetClass;
+	UPROPERTY()
+	class UAbilityBarWidget* AbilityBarWidget;
+
 	UPROPERTY(EditAnywhere, Category = PlayerStats)
 	TSubclassOf<UInventoryScreenWidget> InventoryScreenWidgetClass;
 	UPROPERTY()
@@ -96,6 +101,7 @@ protected:
 	void AddHotbarWidget();
 	void AddInventoryScreen();
 	void AddQuestWidget();
+	void AddAbilityBarWidget();
 private:
 	FHUDPackage HUDPackage;
 
@@ -105,6 +111,10 @@ public:
 	// Called from DefaultPlayerController::OnPossess — safe to call before or after HUD BeginPlay
 	void InitHotbarForInventory(class UInventoryComponent* Inventory);
 	void InitInventoryScreenForInventory(class UInventoryComponent* Inventory);
+
+	// Called from DefaultPlayerController::OnPossess. Safe with a null hero — the bar simply
+	// shows nothing, which is what happens on a pawn that isn't an AHeroCharacter.
+	void InitAbilityBarForHero(class AHeroCharacter* Hero);
 
 	// Called from PlayerCharacter input — toggles the full inventory screen and cursor
 	void ToggleInventoryScreen();

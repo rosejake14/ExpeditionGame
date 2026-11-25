@@ -9,6 +9,7 @@
 #include "HUD/HotbarWidget.h"
 #include "HUD/QuestWidget.h"
 #include "Character/PlayerCharacter.h"
+#include "Hero/HeroCharacter.h"
 
 void ADefaultPlayerController::BeginPlay()
 {
@@ -127,6 +128,8 @@ void ADefaultPlayerController::OnPossess(APawn* InPawn)
 		{
 			PlayerHUD->InitHotbarForInventory(PlayerCharacter->GetInventory());
 				PlayerHUD->InitInventoryScreenForInventory(PlayerCharacter->GetInventory());
+			// Null when the pawn isn't a hero — the bar just shows nothing.
+			PlayerHUD->InitAbilityBarForHero(Cast<AHeroCharacter>(PlayerCharacter));
 		}
 	}
 }

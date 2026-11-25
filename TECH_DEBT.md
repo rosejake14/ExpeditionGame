@@ -513,12 +513,6 @@ into the build. Remove with TD-DEAD-7/8.
 `DefaultEngine.ini` carries `ActiveGameNameRedirects` and four `ActiveClassRedirects` from the
 original template module. Only needed while unconverted template assets exist; retire with TD-DEAD-9.
 
-### TD-CFG-5 — No `GameInstanceClass` configured (Medium)
-The engine uses stock `UGameInstance`, so the project has nowhere to keep state across a map change —
-chosen difficulty, current run context, selected loadout. **Any feature that must survive
-menu → island travel needs this first.** (Note: do *not* point it at `UWebSocketGameInstance` — see
-TD-DEAD-1.)
-
 ---
 
 ## Suggested sequence
