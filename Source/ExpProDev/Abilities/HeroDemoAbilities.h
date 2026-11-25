@@ -16,7 +16,7 @@
 //  Each is deliberately the simplest thing that demonstrates its slot's gating rule.
 //
 
-/** Signature slot: a short forward dash on a cooldown, standing in for a weapon action. */
+/** Power slot: a short forward dash on a cooldown. */
 UCLASS()
 class EXPPRODEV_API UHeroAbility_Dash : public UHeroAbility
 {

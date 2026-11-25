@@ -26,9 +26,21 @@ FGameplayTag UHeroAbility::GetCooldownTagForSlot(EHeroAbilitySlot InSlot)
 	{
 	case EHeroAbilitySlot::Addon:    return ExpProTags::Cooldown_Addon;
 	case EHeroAbilitySlot::Ultimate: return ExpProTags::Cooldown_Ultimate;
-	case EHeroAbilitySlot::Signature:
-	default:                         return ExpProTags::Cooldown_Signature;
+	case EHeroAbilitySlot::Power:
+	default:                         return ExpProTags::Cooldown_Power;
 	}
+}
+
+void UHeroAbility::FinishAbility(bool bWasCancelled)
+{
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, bWasCancelled);
+}
+
+float UHeroAbility::GetScaledDamage(float BaseDamage) const
+{
+	const UAbilitySystemComponent* ASC = CurrentActorInfo ? CurrentActorInfo->AbilitySystemComponent.Get() : nullptr;
+	const UHeroAttributeSet* Attributes = ASC ? ASC->GetSet<UHeroAttributeSet>() : nullptr;
+	return Attributes ? BaseDamage * Attributes->GetDamageMultiplier() : BaseDamage;
 }
 
 AHeroCharacter* UHeroAbility::GetHeroCharacter(const FGameplayAbilityActorInfo* ActorInfo) const
@@ -46,7 +58,7 @@ const FGameplayTagContainer* UHeroAbility::GetCooldownTags() const
 	}
 
 	CooldownTags.Reset();
-	CooldownTags.AddTag(GetCooldownTagForSlot(Slot));
+	CooldownTags.AddTag(GetCooldownTagForSlot(GrantedSlot));
 	return &CooldownTags;
 }
 
@@ -69,7 +81,7 @@ void UHeroAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
 	// Duration and identity are both supplied here, which is what lets one shared cooldown
 	// effect serve every ability in the game.
 	Spec.Data->SetSetByCallerMagnitude(ExpProTags::Data_CooldownDuration, CooldownSeconds);
-	Spec.Data->DynamicGrantedTags.AddTag(GetCooldownTagForSlot(Slot));
+	Spec.Data->DynamicGrantedTags.AddTag(GetCooldownTagForSlot(GrantedSlot));
 
 	ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, Spec);
 }
@@ -135,5 +147,9 @@ void UHeroAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	ExecuteHeroAbility(ActorInfo);
 	OnAbilityActivated();
 
-	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	// Long-running abilities end themselves through FinishAbility.
+	if (bEndsImmediately)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
 }

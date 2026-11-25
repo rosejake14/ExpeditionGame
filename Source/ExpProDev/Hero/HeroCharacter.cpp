@@ -3,14 +3,103 @@
 #include "Hero/HeroCharacter.h"
 
 #include "Abilities/HeroAttributeSet.h"
+#include "Components/CombatComponent.h"
 #include "ExpProDev.h"
 #include "Hero/HeroDefinition.h"
+#include "Weapon/Weapon.h"
 
 #include "AbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
+#include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "TimerManager.h"
+
+void AHeroCharacter::ZoomCamera(float Multiplier, float Duration, float BlendTime)
+{
+	if (!ZoomArm) ZoomArm = FindComponentByClass<USpringArmComponent>();
+	if (!ZoomArm || !GetWorld() || Duration <= 0.f)
+	{
+		UE_LOG(LogExpProDev, Warning, TEXT("HeroCharacter: ZoomCamera skipped (no spring arm or zero duration)."));
+		return;
+	}
+
+	if (BaseArmLength < 0.f) BaseArmLength = ZoomArm->TargetArmLength;
+
+	ZoomStartLength = ZoomArm->TargetArmLength;
+	ZoomPeakLength  = BaseArmLength * Multiplier;
+	ZoomReturnFrom  = ZoomPeakLength;
+	ZoomDuration    = Duration;
+	ZoomBlend       = FMath::Clamp(BlendTime, KINDA_SMALL_NUMBER, Duration * 0.5f);
+	ZoomElapsed     = 0.f;
+	ZoomLastTime    = GetWorld()->GetTimeSeconds();
+
+	GetWorldTimerManager().ClearTimer(ZoomTimer);
+	ZoomTimer = GetWorldTimerManager().SetTimerForNextTick(this, &AHeroCharacter::StepCameraZoom);
+}
+
+void AHeroCharacter::SetCameraZoom(float Multiplier)
+{
+	if (!ZoomArm) ZoomArm = FindComponentByClass<USpringArmComponent>();
+	if (!ZoomArm) return;
+
+	if (BaseArmLength < 0.f) BaseArmLength = ZoomArm->TargetArmLength;
+
+	GetWorldTimerManager().ClearTimer(ZoomTimer);
+	ZoomElapsed = 0.f;
+	ZoomArm->TargetArmLength = BaseArmLength * Multiplier;
+}
+
+void AHeroCharacter::StopCameraZoom(float BlendTime)
+{
+	if (!ZoomArm || BaseArmLength < 0.f || !GetWorld()) return;
+
+	// Jump straight into the return phase, starting from wherever the arm is now.
+	ZoomReturnFrom = ZoomArm->TargetArmLength;
+	ZoomBlend      = FMath::Max(BlendTime, KINDA_SMALL_NUMBER);
+	ZoomDuration   = ZoomElapsed + ZoomBlend;
+	ZoomLastTime   = GetWorld()->GetTimeSeconds();
+
+	GetWorldTimerManager().ClearTimer(ZoomTimer);
+	ZoomTimer = GetWorldTimerManager().SetTimerForNextTick(this, &AHeroCharacter::StepCameraZoom);
+}
+
+void AHeroCharacter::StepCameraZoom()
+{
+	if (!ZoomArm || !GetWorld()) return;
+
+	const float Now = GetWorld()->GetTimeSeconds();
+	ZoomElapsed += Now - ZoomLastTime;
+	ZoomLastTime = Now;
+
+	constexpr float EaseExponent = 2.f;
+
+	if (ZoomElapsed >= ZoomDuration)
+	{
+		ZoomArm->TargetArmLength = BaseArmLength;
+		return;
+	}
+
+	if (ZoomElapsed >= ZoomDuration - ZoomBlend)
+	{
+		// Return: ReturnFrom eases back down to the normal length.
+		const float Alpha = (ZoomDuration - ZoomElapsed) / ZoomBlend;
+		ZoomArm->TargetArmLength = FMath::InterpEaseInOut(BaseArmLength, ZoomReturnFrom, Alpha, EaseExponent);
+	}
+	else if (ZoomElapsed < ZoomBlend)
+	{
+		const float Alpha = ZoomElapsed / ZoomBlend;
+		ZoomArm->TargetArmLength = FMath::InterpEaseInOut(ZoomStartLength, ZoomPeakLength, Alpha, EaseExponent);
+	}
+	else
+	{
+		ZoomArm->TargetArmLength = ZoomPeakLength;
+	}
+
+	ZoomTimer = GetWorldTimerManager().SetTimerForNextTick(this, &AHeroCharacter::StepCameraZoom);
+}
 
 void AHeroCharacter::SetHeroDefinition(UHeroDefinition* InDefinition)
 {
@@ -115,6 +204,29 @@ void AHeroCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	GrantAbilities();
+	EquipStartingWeapon();
+}
+
+void AHeroCharacter::EquipStartingWeapon()
+{
+	UCombatComponent* CombatComponent = GetCombat();
+	if (!HeroDefinition || !HeroDefinition->StartingWeapon || !CombatComponent) return;
+	if (CombatComponent->GetEquippedWeapon()) return;
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AWeapon* Weapon = GetWorld()->SpawnActor<AWeapon>(
+		HeroDefinition->StartingWeapon, GetActorLocation(), GetActorRotation(), Params);
+	if (!Weapon)
+	{
+		UE_LOG(LogExpProDev, Warning, TEXT("HeroCharacter: failed to spawn starting weapon."));
+		return;
+	}
+
+	CombatComponent->EquipWeapon(Weapon);
+	UE_LOG(LogExpProDev, Log, TEXT("HeroCharacter: equipped starting weapon '%s'."), *Weapon->GetName());
 }
 
 void AHeroCharacter::GrantAbilities()
@@ -124,7 +236,7 @@ void AHeroCharacter::GrantAbilities()
 
 	const TSubclassOf<UGameplayAbility> SlotAbilities[3] =
 	{
-		HeroDefinition->SignatureAbility,
+		HeroDefinition->PowerAbility,
 		HeroDefinition->AddonAbility,
 		HeroDefinition->UltimateAbility
 	};
@@ -142,6 +254,14 @@ void AHeroCharacter::GrantAbilities()
 
 		FGameplayAbilitySpec Spec(SlotAbilities[SlotIndex], 1, INDEX_NONE, this);
 		AbilityHandles[SlotIndex] = ASC->GiveAbility(Spec);
+
+		// The instance exists as soon as GiveAbility returns (InstancedPerActor + ReplicateNo), and
+		// GAS runs CanActivate/Commit on it, so this is where its cooldown tag gets decided.
+		const FGameplayAbilitySpec* Granted = ASC->FindAbilitySpecFromHandle(AbilityHandles[SlotIndex]);
+		if (UHeroAbility* Instance = Granted ? Cast<UHeroAbility>(Granted->GetPrimaryInstance()) : nullptr)
+		{
+			Instance->SetGrantedSlot(static_cast<EHeroAbilitySlot>(SlotIndex));
+		}
 	}
 }
 
@@ -165,15 +285,15 @@ void AHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(PlayerInputComponent);
 	if (!Input) return;
 
-	if (SignatureAbilityAction)
-		Input->BindAction(SignatureAbilityAction, ETriggerEvent::Started, this, &AHeroCharacter::ActivateSignature);
+	if (PowerAbilityAction)
+		Input->BindAction(PowerAbilityAction, ETriggerEvent::Started, this, &AHeroCharacter::ActivatePower);
 	if (AddonAbilityAction)
 		Input->BindAction(AddonAbilityAction, ETriggerEvent::Started, this, &AHeroCharacter::ActivateAddon);
 	if (UltimateAbilityAction)
 		Input->BindAction(UltimateAbilityAction, ETriggerEvent::Started, this, &AHeroCharacter::ActivateUltimate);
 }
 
-void AHeroCharacter::ActivateSignature() { ActivateSlot(EHeroAbilitySlot::Signature); }
+void AHeroCharacter::ActivatePower()     { ActivateSlot(EHeroAbilitySlot::Power); }
 void AHeroCharacter::ActivateAddon()     { ActivateSlot(EHeroAbilitySlot::Addon); }
 void AHeroCharacter::ActivateUltimate()  { ActivateSlot(EHeroAbilitySlot::Ultimate); }
 

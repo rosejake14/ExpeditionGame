@@ -29,7 +29,7 @@ public:
 	 *  (its panel slot), and UHT rejects shadowing it.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
-	EHeroAbilitySlot AbilitySlot = EHeroAbilitySlot::Signature;
+	EHeroAbilitySlot AbilitySlot = EHeroAbilitySlot::Power;
 
 	/** Called by UAbilityBarWidget once the pawn exists. */
 	void InitSlot(class AHeroCharacter* InHero);

@@ -274,6 +274,7 @@ public:
 	void UnfreezeAfterExtraction();
 
 	FORCEINLINE class UInventoryComponent* GetInventory() const { return Inventory; }
+	FORCEINLINE class UCombatComponent* GetCombat() const { return Combat; }
 	FORCEINLINE class UQuestManagerComponent* GetQuestManager() const { return QuestManager; }
 
 	// For calling ONLY ON THE SERVER

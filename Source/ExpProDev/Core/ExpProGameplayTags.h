@@ -15,11 +15,12 @@
 namespace ExpProTags
 {
 	// ── Ability slots ─────────────────────────────────────────────────────
-	// A hero has exactly three. UHeroDefinition maps an input action to one of these, and the
-	// ability bar draws one widget per slot, so the set is deliberately fixed.
+	// A hero has exactly three ability slots: Power (E), Addon (F), Ultimate (Q). Main (Mouse 1)
+	// is weapon fire through UCombatComponent and has no slot yet. The ability bar draws one
+	// widget per slot, so the set is deliberately fixed.
 
-	/** The hero's weapon action. Gated by a cooldown standing in for reload time. */
-	EXPPRODEV_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Slot_Signature);
+	/** The hero's unique Power ability (E). Cooldown-gated. */
+	EXPPRODEV_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Slot_Power);
 
 	/** Secondary attack. Cooldown-gated, or uncapped when the ability has no cooldown effect. */
 	EXPPRODEV_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Slot_Addon);
@@ -47,7 +48,7 @@ namespace ExpProTags
 	// One per slot. A hero only ever has one ability per slot, so the slot is enough to keep
 	// separate cooldowns apart without a tag per ability.
 
-	EXPPRODEV_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Signature);
+	EXPPRODEV_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Power);
 	EXPPRODEV_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Addon);
 	EXPPRODEV_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cooldown_Ultimate);
 

@@ -14,7 +14,6 @@
 
 UHeroAbility_Dash::UHeroAbility_Dash()
 {
-	Slot = EHeroAbilitySlot::Signature;
 	CooldownSeconds = 5.f;
 	DisplayName = NSLOCTEXT("HeroAbilities", "Dash", "Dash");
 }
@@ -34,7 +33,6 @@ void UHeroAbility_Dash::ExecuteHeroAbility(const FGameplayAbilityActorInfo* Acto
 
 UHeroAbility_HealBurst::UHeroAbility_HealBurst()
 {
-	Slot = EHeroAbilitySlot::Addon;
 	CooldownSeconds = 15.f;
 	DisplayName = NSLOCTEXT("HeroAbilities", "HealBurst", "Heal Burst");
 }
@@ -58,7 +56,6 @@ void UHeroAbility_HealBurst::ExecuteHeroAbility(const FGameplayAbilityActorInfo*
 
 UHeroAbility_ChargeBurst::UHeroAbility_ChargeBurst()
 {
-	Slot = EHeroAbilitySlot::Ultimate;
 	bChargeGated = true;
 	DisplayName = NSLOCTEXT("HeroAbilities", "ChargeBurst", "Charge Burst");
 }
@@ -74,7 +71,7 @@ void UHeroAbility_ChargeBurst::ExecuteHeroAbility(const FGameplayAbilityActorInf
 
 	UGameplayStatics::ApplyRadialDamage(
 		Hero,
-		BurstDamage,
+		GetScaledDamage(BurstDamage),
 		Hero->GetActorLocation(),
 		BurstRadius,
 		nullptr,

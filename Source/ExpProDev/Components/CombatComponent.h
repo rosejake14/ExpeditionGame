@@ -24,7 +24,9 @@ public:
 	friend class APlayerCharacter;
 
 	void EquipWeapon(class AWeapon* WeaponToEquip);
-	
+
+	FORCEINLINE AWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
+
 protected:
 	virtual void BeginPlay() override;
 

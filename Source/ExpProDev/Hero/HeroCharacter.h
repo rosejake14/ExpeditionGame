@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Abilities/HeroAbility.h"
 #include "Character/PlayerCharacter.h"
+#include "Engine/TimerHandle.h"
 #include "GameplayAbilitySpec.h"
 #include "HeroCharacter.generated.h"
 
@@ -43,8 +44,33 @@ public:
 	// rather than being repeated in all four hero definitions.
 	//
 
+	/** E. */
 	UPROPERTY(EditAnywhere, Category = "Hero|Input")
-	UInputAction* SignatureAbilityAction = nullptr;
+	UInputAction* PowerAbilityAction = nullptr;
+
+	//
+	// Camera zoom, shared by every ability (C++ or Blueprint).
+	//
+
+	/**
+	 *  Eases the camera arm out to Multiplier x its normal length over BlendTime, holds, then eases
+	 *  back over the last BlendTime of Duration. Calling again mid-zoom restarts from the current
+	 *  length, so there is no jump. BlendTime is clamped to half of Duration.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Hero")
+	void ZoomCamera(float Multiplier, float Duration, float BlendTime = 0.25f);
+
+	/** Eases straight back to the normal length from wherever the zoom currently is. */
+	UFUNCTION(BlueprintCallable, Category = "Hero")
+	void StopCameraZoom(float BlendTime = 0.25f);
+
+	/**
+	 *  Sets the arm to Multiplier x its normal length right now, cancelling any timed zoom. For
+	 *  abilities whose zoom follows something live (e.g. height); call every frame, then
+	 *  StopCameraZoom when done.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Hero")
+	void SetCameraZoom(float Multiplier);
 
 	UPROPERTY(EditAnywhere, Category = "Hero|Input")
 	UInputAction* AddonAbilityAction = nullptr;
@@ -64,8 +90,11 @@ protected:
 	/** Gives the three abilities the definition names, remembering each handle for input. */
 	void GrantAbilities();
 
+	/** Spawns and equips the definition's StartingWeapon, unless something is already equipped. */
+	void EquipStartingWeapon();
+
 	/** Input handlers — one per slot, each activating that slot's granted spec. */
-	void ActivateSignature();
+	void ActivatePower();
 	void ActivateAddon();
 	void ActivateUltimate();
 
@@ -81,4 +110,25 @@ private:
 	 *  tag keeps input wiring independent of how an ability tags itself.
 	 */
 	FGameplayAbilitySpecHandle AbilityHandles[3];
+
+	// ── Camera zoom state ─────────────────────────────────────────────────
+
+	/** One per-frame step of the active zoom. Re-arms itself until the zoom is done. */
+	void StepCameraZoom();
+
+	UPROPERTY()
+	class USpringArmComponent* ZoomArm = nullptr;
+
+	FTimerHandle ZoomTimer;
+
+	/** The arm's normal length, captured on the first zoom so repeated zooms can't drift. <0 = not yet. */
+	float BaseArmLength = -1.f;
+
+	float ZoomStartLength = 0.f;   // length when the current zoom began
+	float ZoomPeakLength = 0.f;    // held length
+	float ZoomReturnFrom = 0.f;    // length the return blend starts from
+	float ZoomDuration = 0.f;
+	float ZoomBlend = 0.f;
+	float ZoomElapsed = 0.f;
+	float ZoomLastTime = 0.f;
 };

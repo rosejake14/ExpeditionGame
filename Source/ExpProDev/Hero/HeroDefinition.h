@@ -102,8 +102,9 @@ public:
 	// Typed as the GAS base rather than UHeroAbility, which does not exist until phase 3.
 	// UHeroAbility will derive from UGameplayAbility, so assets assigned here stay valid.
 
+	/** E — the hero's unique Power ability. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hero|Abilities")
-	TSubclassOf<class UGameplayAbility> SignatureAbility;
+	TSubclassOf<class UGameplayAbility> PowerAbility;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hero|Abilities")
 	TSubclassOf<class UGameplayAbility> AddonAbility;

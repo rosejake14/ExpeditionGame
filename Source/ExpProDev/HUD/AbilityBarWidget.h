@@ -10,7 +10,7 @@
  *  The three-slot ability bar. Set the parent class of WBP_AbilityBar to this.
  *
  *  The Blueprint must contain three UAbilitySlotWidget children with these exact names:
- *    SignatureSlot / AddonSlot / UltimateSlot
+ *    PowerSlot / AddonSlot / UltimateSlot
  *  Set each one's Slot property to match its name.
  *
  *  Follows the same shape as UHotbarWidget: the controller hands it the pawn once both exist.
@@ -25,7 +25,7 @@ public:
 
 protected:
 	UPROPERTY(meta = (BindWidget))
-	class UAbilitySlotWidget* SignatureSlot;
+	class UAbilitySlotWidget* PowerSlot;
 
 	UPROPERTY(meta = (BindWidget))
 	class UAbilitySlotWidget* AddonSlot;

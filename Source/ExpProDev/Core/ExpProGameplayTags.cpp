@@ -4,8 +4,8 @@
 
 namespace ExpProTags
 {
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Slot_Signature, "Ability.Slot.Signature",
-		"The hero's weapon action. Cooldown stands in for reload time.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Slot_Power, "Ability.Slot.Power",
+		"The hero's unique Power ability (E). Cooldown-gated.");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Slot_Addon, "Ability.Slot.Addon",
 		"Secondary attack. Cooldown-gated, or uncapped when no cooldown effect is set.");
@@ -25,8 +25,8 @@ namespace ExpProTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Data_CooldownDuration, "Data.CooldownDuration",
 		"SetByCaller magnitude for an ability cooldown's duration, in seconds.");
 
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Cooldown_Signature, "Cooldown.Signature",
-		"Present while the signature ability is cooling down.");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Cooldown_Power, "Cooldown.Power",
+		"Present while the power ability is cooling down.");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Cooldown_Addon, "Cooldown.Addon",
 		"Present while the addon ability is cooling down.");
